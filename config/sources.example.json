@@ -1,0 +1,22 @@
+{
+  "sources": [
+    {
+      "id": "general-rss-example",
+      "name": "General News RSS Example",
+      "type": "rss",
+      "url": "https://example.com/news/rss",
+      "enabled": false,
+      "priority": 0.7,
+      "topics": ["general", "world", "us"]
+    },
+    {
+      "id": "tech-rss-example",
+      "name": "Tech News RSS Example",
+      "type": "rss",
+      "url": "https://example.com/tech/rss",
+      "enabled": false,
+      "priority": 1,
+      "topics": ["tech", "programming", "startups"]
+    }
+  ]
+}
