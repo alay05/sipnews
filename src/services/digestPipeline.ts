@@ -3,7 +3,7 @@ import { createAdapter } from "../adapters/index.js";
 import { buildDigestSms } from "../core/sms.js";
 import { dedupeArticles } from "../core/dedupe.js";
 import { normalizeArticle } from "../core/normalize.js";
-import { rankClusters } from "../core/ranking.js";
+import { rankClusters, selectCategoryBalancedClusters } from "../core/ranking.js";
 import type { SourceConfig, Digest } from "../types/articles.js";
 import type { NewsSummarizer } from "./ai.js";
 import type { SmsClient } from "./twilio.js";
@@ -15,6 +15,7 @@ export interface DigestPipelineOptions {
   publicBaseUrl: string;
   smsTo?: string;
   smsFrom?: string;
+  digestDate?: Date;
 }
 
 export class DigestPipeline {
@@ -27,7 +28,17 @@ export class DigestPipeline {
   async run(options: DigestPipelineOptions): Promise<Digest> {
     const rawArticles = (
       await Promise.all(
-        options.sources.map((source) => createAdapter(source).fetch(source))
+        options.sources.map(async (source) => {
+          try {
+            return await createAdapter(source).fetch(source);
+          } catch (error) {
+            console.warn(
+              `[sources] ${source.name} (${source.id}) failed; continuing without it.`,
+              error
+            );
+            return [];
+          }
+        })
       )
     ).flat();
 
@@ -35,9 +46,10 @@ export class DigestPipeline {
     await this.store.saveArticles(articles);
 
     const preferences = await this.store.getPreferences();
-    const clusters = rankClusters(dedupeArticles(articles), preferences).slice(
-      0,
-      options.maxItems
+    const digestDate = options.digestDate ?? new Date();
+    const clusters = selectCategoryBalancedClusters(
+      rankClusters(dedupeArticles(articles), preferences, digestDate),
+      { maxItems: options.maxItems, date: digestDate }
     );
     await this.store.saveClusters(clusters);
 
@@ -45,7 +57,7 @@ export class DigestPipeline {
     const items = await this.summarizer.summarize(clusters);
     const digest: Digest = {
       id: digestId,
-      createdAt: new Date(),
+      createdAt: digestDate,
       items,
       smsBody: buildDigestSms(digestId, items, options.publicBaseUrl)
     };

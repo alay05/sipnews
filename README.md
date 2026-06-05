@@ -50,15 +50,22 @@ The implementation is intentionally MVP-sized. It uses an in-memory store at run
 
 ## Source Configuration
 
-The scaffold supports `rss` now and includes placeholders for official API adapters:
+The default example config is tailored to a 20% general, 30% tech industry, 30% AI/dev/programming, and 20% startup mix. It includes 20 enabled sources across BBC, Guardian, GDELT discovery, The Verge, Ars Technica, WIRED, TechCrunch, OpenAI, GitHub, Simon Willison, Hacker News, YC, Product Hunt, and Crunchbase News.
+
+Supported source adapters:
 
 - `rss`
-- `newsapi`
 - `guardian`
 - `gdelt`
+- `newsapi` placeholder
 - `openai_web_search`
 
-Do not put broad scraping targets in the default config. Prefer RSS feeds and official APIs whose terms allow your use.
+Guardian sources require `THE_GUARDIAN_API_KEY`. GDELT and RSS sources do not need keys. Do not put broad scraping targets in the default config. Prefer RSS feeds and official APIs whose terms allow your use.
+
+The SMS digest uses a category-balanced selector. For 5 items, it alternates daily between:
+
+- `1 general / 2 tech / 1 AI-dev / 1 startup`
+- `1 general / 1 tech / 2 AI-dev / 1 startup`
 
 ## Database
 

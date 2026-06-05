@@ -8,18 +8,26 @@ Use RSS and official APIs first. They are stable, cheap, and provide enough meta
 
 For the user's preference, weight the digest toward tech, AI, programming, and startups while preserving one concise general-news slot:
 
-- General world / US news: 15%
-- Tech industry: 25%
-- AI tools, AI development, and programming: 35%
+- General world / US news: 20%
+- Tech industry: 30%
+- AI tools, AI development, and general programming: 30%
 - Startups and venture: 20%
-- Wildcard / high-signal stories from user feedback: 5%
 
-For an SMS digest, default to 5 items:
+For an SMS digest, default to 5 items with a weighted rotation. Across every two daily digests, target 10 total items:
+
+- 2 general world or US stories
+- 3 tech-industry stories
+- 3 AI tool/dev/general programming stories
+- 2 startup/tool/funding stories
+
+On any single day, send:
 
 - 1 general world or US story
-- 1 tech-industry story
-- 2 AI/dev/programming stories
+- 1-2 tech-industry stories
+- 1-2 AI tool/dev/general programming stories
 - 1 startup/tool/funding story
+
+Alternate the extra middle slot between tech industry and AI/dev/programming so the weekly mix stays close to 30% / 30%.
 
 Use a longer web digest for overflow. SMS should contain only the highest-ranked cluster titles, short summaries, and one canonical link per cluster.
 
@@ -101,9 +109,10 @@ Do not require full article text for MVP. For high-quality summaries, combine fe
   - 10% novelty compared with recent digests
 - Start with these per-category caps for the SMS:
   - General: max 1 item
-  - Tech industry: max 1 item
+  - Tech industry: max 2 items
   - AI/dev/programming: max 2 items
   - Startups/tools: max 1 item
+- Use a two-day weighted rotation so the 5-item SMS format averages to 20% general, 30% tech industry, 30% AI tool/dev/general programming, and 20% startups.
 - Full web digest can include 10-15 ranked items plus "more like this" links.
 
 ## Implementation Assumptions

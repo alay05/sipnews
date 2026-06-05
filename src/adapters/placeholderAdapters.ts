@@ -6,7 +6,7 @@ export class NotYetImplementedAdapter implements SourceAdapter {
 
   async fetch(source: SourceConfig): Promise<RawArticle[]> {
     console.warn(
-      `[sources] ${this.adapterName} adapter is configured for ${source.id}, but only the RSS adapter is implemented in this scaffold.`
+      `[sources] ${this.adapterName} adapter is configured for ${source.id}, but this optional adapter is not implemented yet.`
     );
     return [];
   }
