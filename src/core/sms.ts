@@ -7,18 +7,27 @@ export function buildDigestSms(
   items: DigestItem[],
   publicBaseUrl: string
 ): string {
-  const lines = ["Daily news digest:"];
+  const blocks = ["*Daily news digest*"];
 
   for (const item of items) {
-    const link = item.sourceLinks[0]?.url ?? `${publicBaseUrl}/d/${digestId}`;
-    lines.push(
-      `${item.index}. ${item.title} - ${item.shortSummary} ${link}`
+    const links = item.sourceLinks.length
+      ? item.sourceLinks.map((link) => link.url).slice(0, 2)
+      : [`${publicBaseUrl}/d/${digestId}`];
+
+    blocks.push(
+      [
+        `*${item.index}. ${item.title}*`,
+        item.shortSummary,
+        ...links
+      ].join("\n")
     );
   }
 
-  lines.push(`Reply +2, -3, more AI, less politics, mute Source, or read all: ${publicBaseUrl}/d/${digestId}`);
+  blocks.push(
+    `Read all: ${publicBaseUrl}/d/${digestId}\nReply +2, -3, more AI, less politics, or mute Source.`
+  );
 
-  return enforceSmsLength(lines.join("\n"));
+  return enforceSmsLength(blocks.join("\n\n"));
 }
 
 export function enforceSmsLength(body: string): string {

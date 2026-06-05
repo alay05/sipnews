@@ -11,7 +11,16 @@ const envSchema = z.object({
   TWILIO_ACCOUNT_SID: z.string().optional(),
   TWILIO_AUTH_TOKEN: z.string().optional(),
   TWILIO_FROM_NUMBER: z.string().optional(),
+  TWILIO_VALIDATE_WEBHOOKS: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
   PERSONAL_PHONE_NUMBER: z.string().optional(),
+  PERSONAL_USER_ID: z.string().default("personal"),
+  PERSONAL_DISPLAY_NAME: z.string().optional(),
+  PERSONAL_TIMEZONE: z.string().default("America/New_York"),
+  DIGEST_SEND_HOUR: z.coerce.number().int().min(0).max(23).default(7),
+  DIGEST_MAX_ITEMS: z.coerce.number().int().min(1).max(10).default(5),
   JOB_SECRET: z.string().default("change-me"),
   FEEDBACK_SECRET: z.string().default("change-me-too")
 });

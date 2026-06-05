@@ -19,7 +19,7 @@ export function normalizeArticle(raw: RawArticle): Article {
   );
 
   return {
-    id: hashContent(raw.guid ?? `${raw.sourceId}:${canonicalUrl}:${title}`),
+    id: hashContent(`${raw.sourceId}:${canonicalUrl}`),
     sourceId: raw.sourceId,
     sourceName: raw.sourceName,
     sourcePriority: raw.sourcePriority,

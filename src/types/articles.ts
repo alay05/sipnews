@@ -66,7 +66,11 @@ export interface DigestItem {
 
 export interface Digest {
   id: string;
+  userId: string;
+  localDate: string;
   createdAt: Date;
+  sentAt?: Date;
+  recipientPhone?: string;
   smsBody: string;
   items: DigestItem[];
 }
@@ -75,4 +79,14 @@ export interface UserPreferences {
   topicWeights: Record<string, number>;
   sourceWeights: Record<string, number>;
   mutedSources: string[];
+}
+
+export interface AppUser {
+  id: string;
+  phoneNumber: string;
+  displayName?: string;
+  timezone: string;
+  sendHour: number;
+  digestMaxItems: number;
+  isActive: boolean;
 }

@@ -1,16 +1,24 @@
 import { loadEnv } from "./config/env.js";
 import { loadSourcesConfig } from "./config/sources.js";
+import { configuredPersonalUser } from "./config/user.js";
 import { createSummarizer } from "./services/ai.js";
+import { createStore } from "./services/createStore.js";
 import { DigestPipeline } from "./services/digestPipeline.js";
-import { InMemoryStore } from "./services/store.js";
 import { createSmsClient } from "./services/twilio.js";
 
 async function main(): Promise<void> {
   const env = loadEnv();
   const sources = await loadSourcesConfig(env.SOURCES_CONFIG_PATH);
+  const user = configuredPersonalUser(env);
+  if (!user) {
+    throw new Error("PERSONAL_PHONE_NUMBER is required to run a digest");
+  }
+
+  const store = createStore(env);
+  await store.ensureUser(user);
 
   const pipeline = new DigestPipeline(
-    new InMemoryStore(),
+    store,
     createSummarizer({
       openAiApiKey: env.OPENAI_API_KEY,
       openAiModel: env.OPENAI_MODEL
@@ -22,10 +30,9 @@ async function main(): Promise<void> {
   );
 
   const digest = await pipeline.run({
+    user,
     sources,
-    maxItems: 5,
     publicBaseUrl: env.PUBLIC_BASE_URL,
-    smsTo: env.PERSONAL_PHONE_NUMBER,
     smsFrom: env.TWILIO_FROM_NUMBER
   });
 

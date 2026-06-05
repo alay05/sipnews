@@ -67,6 +67,8 @@ The SMS digest uses a category-balanced selector. For 5 items, it alternates dai
 - `1 general / 2 tech / 1 AI-dev / 1 startup`
 - `1 general / 1 tech / 2 AI-dev / 1 startup`
 
+`DIGEST_MAX_ITEMS` controls the item count. The first user is seeded from env vars, but users, digests, feedback, and preferences are stored by `user_id` so the app can expand to a few users later.
+
 ## Database
 
 Run `migrations/001_init.sql` against Postgres when replacing the in-memory store:
@@ -75,7 +77,22 @@ Run `migrations/001_init.sql` against Postgres when replacing the in-memory stor
 psql "$DATABASE_URL" -f migrations/001_init.sql
 ```
 
-The schema includes `pgvector` columns for article and preference embeddings.
+The schema includes `users`, user-scoped digests, feedback, preferences, and `pgvector` columns for article and preference embeddings.
+
+When `DATABASE_URL` is set, the app uses Postgres. If it is unset, it runs with the in-memory store for local development.
+
+## Scheduling
+
+The repo includes `.github/workflows/daily-digest.yml`, which calls the deployed job endpoint every day at 7:00 AM `America/New_York`.
+
+Set these GitHub Actions secrets:
+
+```txt
+DIGEST_JOB_URL=https://your-domain.com/jobs/daily-digest
+JOB_SECRET=<same value as production JOB_SECRET>
+```
+
+The endpoint is idempotent by `user_id` and local date, so a same-day retry returns the existing digest instead of sending a duplicate.
 
 ## Personalization Model
 

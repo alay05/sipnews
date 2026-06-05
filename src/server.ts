@@ -24,9 +24,9 @@ export function buildApp(env: AppEnv, store: AppStore = new InMemoryStore()) {
   const pipeline = new DigestPipeline(store, summarizer, smsClient);
 
   app.get("/health", (_req, res) => res.json({ ok: true }));
-  app.use("/webhooks/twilio", createTwilioRouter(store));
+  app.use("/webhooks/twilio", createTwilioRouter(store, env));
   app.use("/", createDigestRouter(store, env.FEEDBACK_SECRET));
-  app.use("/jobs", createJobsRouter(env, pipeline));
+  app.use("/jobs", createJobsRouter(env, pipeline, store));
 
   return app;
 }
