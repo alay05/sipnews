@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DigestPipeline } from "../src/services/digestPipeline.js";
+import { DigestPipeline, withTimeout } from "../src/services/digestPipeline.js";
 import { InMemoryStore } from "../src/services/store.js";
 import type { AppUser, StoryCluster } from "../src/types/articles.js";
 import type { NewsSummarizer } from "../src/services/ai.js";
@@ -31,6 +31,65 @@ describe("DigestPipeline", () => {
 
     expect(second.id).toBe(first.id);
     expect(smsClient.sentBodies).toHaveLength(1);
+  });
+
+  it("does not resend an already sent digest", async () => {
+    const store = new InMemoryStore();
+    const user = appUser();
+    await store.ensureUser(user);
+
+    const smsClient = new RecordingSmsClient();
+    const pipeline = new DigestPipeline(store, new EmptySummarizer(), smsClient);
+
+    await pipeline.run({
+      user,
+      sources: [],
+      publicBaseUrl: "https://digest.example",
+      smsFrom: "+15550009999",
+      digestDate: new Date("2026-06-05T11:00:00Z")
+    });
+    await pipeline.run({
+      user,
+      sources: [],
+      publicBaseUrl: "https://digest.example",
+      smsFrom: "+15550009999",
+      digestDate: new Date("2026-06-05T15:00:00Z")
+    });
+
+    expect(smsClient.sentBodies).toHaveLength(1);
+  });
+
+  it("can skip SMS while still creating the digest", async () => {
+    const store = new InMemoryStore();
+    const user = appUser();
+    await store.ensureUser(user);
+
+    const smsClient = new RecordingSmsClient();
+    const pipeline = new DigestPipeline(store, new EmptySummarizer(), smsClient);
+
+    const digest = await pipeline.run({
+      user,
+      sources: [],
+      publicBaseUrl: "https://digest.example",
+      smsFrom: "+15550009999",
+      sendSms: false,
+      digestDate: new Date("2026-06-05T11:00:00Z")
+    });
+
+    expect(digest.sentAt).toBeUndefined();
+    expect(smsClient.sentBodies).toHaveLength(0);
+  });
+});
+
+describe("withTimeout", () => {
+  it("rejects slow work with the provided message", async () => {
+    await expect(
+      withTimeout(
+        new Promise((resolve) => setTimeout(resolve, 50)),
+        1,
+        "source timed out"
+      )
+    ).rejects.toThrow("source timed out");
   });
 });
 

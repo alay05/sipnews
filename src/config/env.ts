@@ -8,9 +8,18 @@ const envSchema = z.object({
   DATABASE_URL: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().default("gpt-4.1-mini"),
+  SOURCE_FETCH_TIMEOUT_MS: z.coerce.number().int().min(1000).default(15000),
+  DISABLE_GDELT: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
   TWILIO_ACCOUNT_SID: z.string().optional(),
   TWILIO_AUTH_TOKEN: z.string().optional(),
   TWILIO_FROM_NUMBER: z.string().optional(),
+  SEND_SMS: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((value) => value === "true"),
   TWILIO_VALIDATE_WEBHOOKS: z
     .enum(["true", "false"])
     .default("false")

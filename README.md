@@ -94,6 +94,8 @@ JOB_SECRET=<same value as production JOB_SECRET>
 
 The endpoint is idempotent by `user_id` and local date, so a same-day retry returns the existing digest instead of sending a duplicate.
 
+For production debugging, set `SEND_SMS=false` to verify fetch/summarization/database behavior without sending a text. Set `DISABLE_GDELT=true` if GDELT is rate-limiting during setup. Job responses and logs include a `requestId` so Render logs can be matched to a failed request.
+
 ## Personalization Model
 
 The current feedback loop is deterministic:

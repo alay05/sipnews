@@ -14,7 +14,10 @@ export interface DigestPipelineOptions {
   sources: SourceConfig[];
   publicBaseUrl: string;
   smsFrom?: string;
+  sendSms?: boolean;
+  sourceFetchTimeoutMs?: number;
   digestDate?: Date;
+  requestId?: string;
 }
 
 export class DigestPipeline {
@@ -31,15 +34,24 @@ export class DigestPipeline {
       options.user.id,
       localDate
     );
-    if (existingDigest) return existingDigest;
+    if (existingDigest) {
+      await this.sendDigestIfNeeded(existingDigest, options);
+      return existingDigest;
+    }
 
+    logStage(options.requestId, "save_sources", { count: options.sources.length });
     await this.store.saveSources(options.sources);
 
+    logStage(options.requestId, "fetch_sources", { count: options.sources.length });
     const rawArticles = (
       await Promise.all(
         options.sources.map(async (source) => {
           try {
-            return await createAdapter(source).fetch(source);
+            return await withTimeout(
+              createAdapter(source).fetch(source),
+              options.sourceFetchTimeoutMs ?? 15000,
+              `Source ${source.name} (${source.id}) timed out`
+            );
           } catch (error) {
             console.warn(
               `[sources] ${source.name} (${source.id}) failed; continuing without it.`,
@@ -51,9 +63,11 @@ export class DigestPipeline {
       )
     ).flat();
 
+    logStage(options.requestId, "normalize_articles", { count: rawArticles.length });
     const articles = rawArticles.map(normalizeArticle);
     await this.store.saveArticles(articles);
 
+    logStage(options.requestId, "rank_clusters", { count: articles.length });
     const preferences = await this.store.getPreferences(options.user.id);
     const clusters = selectCategoryBalancedClusters(
       rankClusters(dedupeArticles(articles), preferences, digestDate),
@@ -61,6 +75,7 @@ export class DigestPipeline {
     );
     await this.store.saveClusters(clusters);
 
+    logStage(options.requestId, "summarize", { count: clusters.length });
     const digestId = randomUUID();
     const items = await this.summarizer.summarize(clusters);
     const digest: Digest = {
@@ -73,18 +88,30 @@ export class DigestPipeline {
       smsBody: buildDigestSms(digestId, items, options.publicBaseUrl)
     };
 
-    if (options.smsFrom) {
-      await this.smsClient.sendSms({
-        to: options.user.phoneNumber,
-        from: options.smsFrom,
-        body: digest.smsBody
-      });
-      digest.sentAt = new Date();
-    }
-
+    logStage(options.requestId, "save_digest", { digestId: digest.id });
     await this.store.saveDigest(digest);
+    await this.sendDigestIfNeeded(digest, options);
 
     return digest;
+  }
+
+  private async sendDigestIfNeeded(
+    digest: Digest,
+    options: DigestPipelineOptions
+  ): Promise<void> {
+    if (digest.sentAt || !options.smsFrom || options.sendSms === false) return;
+
+    logStage(options.requestId, "send_sms", {
+      digestId: digest.id,
+      userId: options.user.id
+    });
+    await this.smsClient.sendSms({
+      to: options.user.phoneNumber,
+      from: options.smsFrom,
+      body: digest.smsBody
+    });
+    digest.sentAt = new Date();
+    await this.store.saveDigest(digest);
   }
 }
 
@@ -105,4 +132,37 @@ export function getLocalDate(date: Date, timezone: string): string {
   }
 
   return `${year}-${month}-${day}`;
+}
+
+export async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  message: string
+): Promise<T> {
+  let timeout: NodeJS.Timeout | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_resolve, reject) => {
+        timeout = setTimeout(() => reject(new Error(message)), timeoutMs);
+      })
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
+function logStage(
+  requestId: string | undefined,
+  stage: string,
+  detail: Record<string, unknown>
+): void {
+  console.log(
+    JSON.stringify({
+      event: "daily_digest_stage",
+      requestId,
+      stage,
+      ...detail
+    })
+  );
 }
