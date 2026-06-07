@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getLocalDate } from "../src/services/digestPipeline.js";
+import { formatPgDate } from "../src/services/pgStore.js";
 import { InMemoryStore } from "../src/services/store.js";
 import type { AppUser, Digest } from "../src/types/articles.js";
 
@@ -33,6 +34,11 @@ describe("local digest dates", () => {
     expect(getLocalDate(new Date("2026-06-05T01:00:00Z"), "America/New_York")).toBe(
       "2026-06-04"
     );
+  });
+
+  it("formats Postgres date values as YYYY-MM-DD", () => {
+    expect(formatPgDate(new Date("2026-06-06T00:00:00.000Z"))).toBe("2026-06-06");
+    expect(formatPgDate("2026-06-06")).toBe("2026-06-06");
   });
 });
 

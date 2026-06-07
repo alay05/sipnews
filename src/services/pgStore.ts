@@ -327,7 +327,7 @@ export class PgStore implements AppStore {
     return {
       id: String(row.id),
       userId: String(row.user_id),
-      localDate: String(row.local_date),
+      localDate: formatPgDate(row.local_date),
       createdAt: new Date(String(row.created_at)),
       sentAt: row.sent_at ? new Date(String(row.sent_at)) : undefined,
       recipientPhone: row.recipient_phone ? String(row.recipient_phone) : undefined,
@@ -335,6 +335,15 @@ export class PgStore implements AppStore {
       items: items.rows.map(mapDigestItemRow)
     };
   }
+}
+
+export function formatPgDate(value: unknown): string {
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  const text = String(value);
+  const datePrefix = text.match(/^\d{4}-\d{2}-\d{2}/);
+  if (datePrefix) return datePrefix[0];
+  const parsed = new Date(text);
+  return Number.isNaN(parsed.getTime()) ? text : parsed.toISOString().slice(0, 10);
 }
 
 function mapUserRow(row: Record<string, unknown>): AppUser {
