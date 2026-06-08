@@ -1,3 +1,4 @@
+import { COMMAND_PROMPT } from "./commands.js";
 import type { Digest, DigestItem } from "../types/articles.js";
 
 export interface DigestEmail {
@@ -13,13 +14,13 @@ export function buildDigestEmail(digest: Digest, _publicBaseUrl: string): Digest
   const textBlocks = [
     "Daily news digest",
     ...digest.items.map(formatTextItem),
-    "Reply by SMS with +2, -3, more AI, less politics, or mute Source."
+    COMMAND_PROMPT
   ];
 
   const htmlBlocks = [
     "<h1>Daily news digest</h1>",
     ...digest.items.map(formatHtmlItem),
-    "<p>Reply by SMS with +2, -3, more AI, less politics, or mute Source.</p>"
+    `<p>${escapeHtml(COMMAND_PROMPT)}</p>`
   ];
 
   return {

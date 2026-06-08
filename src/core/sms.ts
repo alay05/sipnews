@@ -1,3 +1,4 @@
+import { COMMAND_PROMPT } from "./commands.js";
 import type { Digest, DigestItem } from "../types/articles.js";
 
 const MAX_SMS_BODY_LENGTH = 1450;
@@ -24,7 +25,7 @@ export function buildDigestSms(
   }
 
   blocks.push(
-    `Read all: ${publicBaseUrl}/d/${digestId}\nReply +2, -3, more AI, less politics, or mute Source.`
+    `Read all: ${publicBaseUrl}/d/${digestId}\n${COMMAND_PROMPT}`
   );
 
   return enforceSmsLength(blocks.join("\n\n"));

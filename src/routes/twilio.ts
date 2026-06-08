@@ -1,5 +1,6 @@
 import { Router } from "express";
 import twilio from "twilio";
+import { HELP_RESPONSE } from "../core/commands.js";
 import { parseFeedbackCommand } from "../core/feedback.js";
 import type { AppEnv } from "../config/env.js";
 import {
@@ -62,9 +63,9 @@ function isValidTwilioRequest(
   );
 }
 
-function replyFor(type: string): string {
+export function replyFor(type: string): string {
   if (type === "help") {
-    return "Reply +2, -3, more AI, less politics, mute Source, save 1, or why 4.";
+    return HELP_RESPONSE;
   }
   if (type === "stop") return "Stopped. Twilio opt-out rules may also apply.";
   if (type === "start") return "Started. You will receive future digests if configured.";
