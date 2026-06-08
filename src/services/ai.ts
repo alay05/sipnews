@@ -7,26 +7,7 @@ export interface NewsSummarizer {
 
 export class HeuristicSummarizer implements NewsSummarizer {
   async summarize(clusters: StoryCluster[]): Promise<DigestItem[]> {
-    return clusters.map((cluster, index) => {
-      const article = cluster.representative;
-      return {
-        index: index + 1,
-        clusterId: cluster.id,
-        title: article.title,
-        shortSummary:
-          article.excerpt ??
-          "Open the linked article for details. This local stub is used until OpenAI is configured.",
-        whyItMatters:
-          cluster.articles.length > 1
-            ? `Covered by ${cluster.articles.length} configured sources.`
-            : undefined,
-        sourceLinks: cluster.articles.map((item) => ({
-          sourceName: item.sourceName,
-          url: item.canonicalUrl
-        })),
-        topics: cluster.topics
-      };
-    });
+    return clusters.map(fallbackDigestItem);
   }
 }
 
@@ -44,7 +25,7 @@ export class OpenAINewsSummarizer implements NewsSummarizer {
         {
           role: "system",
           content:
-            "Summarize news clusters into useful daily news digest items. For each shortSummary, write 4-6 substantive sentences covering the core facts, context, why it matters, and concrete implications for a tech-focused reader. Keep titles concise. Return compact JSON only."
+            "Summarize news clusters into useful daily news digest items. Return exactly one item for every input cluster, preserving each input clusterId. For each shortSummary, write 4-6 substantive sentences covering the core facts, context, why it matters, and concrete implications for a tech-focused reader. Keep titles concise. Return compact JSON only."
         },
         {
           role: "user",
@@ -116,8 +97,54 @@ export class OpenAINewsSummarizer implements NewsSummarizer {
     });
 
     const parsed = JSON.parse(response.output_text) as { items: DigestItem[] };
-    return parsed.items;
+    return alignDigestItems(clusters, parsed.items);
   }
+}
+
+export function alignDigestItems(
+  clusters: StoryCluster[],
+  items: DigestItem[]
+): DigestItem[] {
+  const byClusterId = new Map(items.map((item) => [item.clusterId, item]));
+
+  return clusters.map((cluster, index) => {
+    const item = byClusterId.get(cluster.id) ?? fallbackDigestItem(cluster, index);
+    return {
+      ...fallbackDigestItem(cluster, index),
+      ...item,
+      index: index + 1,
+      clusterId: cluster.id,
+      sourceLinks: item.sourceLinks?.length
+        ? item.sourceLinks
+        : sourceLinksForCluster(cluster),
+      topics: item.topics?.length ? item.topics : cluster.topics
+    };
+  });
+}
+
+function fallbackDigestItem(cluster: StoryCluster, index: number): DigestItem {
+  const article = cluster.representative;
+  return {
+    index: index + 1,
+    clusterId: cluster.id,
+    title: article.title,
+    shortSummary:
+      article.excerpt ??
+      "Open the linked article for details. This local stub is used until OpenAI is configured.",
+    whyItMatters:
+      cluster.articles.length > 1
+        ? `Covered by ${cluster.articles.length} configured sources.`
+        : undefined,
+    sourceLinks: sourceLinksForCluster(cluster),
+    topics: cluster.topics
+  };
+}
+
+function sourceLinksForCluster(cluster: StoryCluster): DigestItem["sourceLinks"] {
+  return cluster.articles.map((item) => ({
+    sourceName: item.sourceName,
+    url: item.canonicalUrl
+  }));
 }
 
 export function createSummarizer(options: {
