@@ -4,6 +4,7 @@ import { configuredPersonalUser } from "./config/user.js";
 import { createSummarizer } from "./services/ai.js";
 import { createStore } from "./services/createStore.js";
 import { DigestPipeline } from "./services/digestPipeline.js";
+import { createEmailClient } from "./services/email.js";
 import { createSmsClient } from "./services/twilio.js";
 
 async function main(): Promise<void> {
@@ -26,6 +27,9 @@ async function main(): Promise<void> {
     createSmsClient({
       accountSid: env.TWILIO_ACCOUNT_SID,
       authToken: env.TWILIO_AUTH_TOKEN
+    }),
+    createEmailClient({
+      apiKey: env.SENDGRID_API_KEY
     })
   );
 
@@ -33,7 +37,12 @@ async function main(): Promise<void> {
     user,
     sources,
     publicBaseUrl: env.PUBLIC_BASE_URL,
-    smsFrom: env.TWILIO_FROM_NUMBER
+    smsFrom: env.TWILIO_FROM_NUMBER,
+    sendSms: env.SEND_SMS,
+    emailFrom: env.DIGEST_EMAIL_FROM,
+    emailTo: env.DIGEST_EMAIL_TO,
+    sendEmail: env.SEND_EMAIL,
+    sourceFetchTimeoutMs: env.SOURCE_FETCH_TIMEOUT_MS
   });
 
   console.log(JSON.stringify({ id: digest.id, itemCount: digest.items.length }, null, 2));

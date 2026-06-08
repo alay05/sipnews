@@ -1,7 +1,17 @@
 import "dotenv/config";
 import { z } from "zod";
 
-const envSchema = z.object({
+const optionalNonEmptyString = z.preprocess(
+  (value) => (value === "" ? undefined : value),
+  z.string().optional()
+);
+const optionalEmail = z.preprocess(
+  (value) => (value === "" ? undefined : value),
+  z.string().email().optional()
+);
+
+const envSchema = z
+  .object({
   PORT: z.coerce.number().default(3000),
   PUBLIC_BASE_URL: z.string().url().default("http://localhost:3000"),
   SOURCES_CONFIG_PATH: z.string().default("config/sources.json"),
@@ -24,6 +34,13 @@ const envSchema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((value) => value === "true"),
+  SENDGRID_API_KEY: optionalNonEmptyString,
+  DIGEST_EMAIL_FROM: optionalEmail,
+  DIGEST_EMAIL_TO: optionalEmail,
+  SEND_EMAIL: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
   PERSONAL_PHONE_NUMBER: z.string().optional(),
   PERSONAL_USER_ID: z.string().default("personal"),
   PERSONAL_DISPLAY_NAME: z.string().optional(),
@@ -32,7 +49,23 @@ const envSchema = z.object({
   DIGEST_MAX_ITEMS: z.coerce.number().int().min(1).max(10).default(5),
   JOB_SECRET: z.string().default("change-me"),
   FEEDBACK_SECRET: z.string().default("change-me-too")
-});
+})
+  .superRefine((env, ctx) => {
+    if (!env.SEND_EMAIL) return;
+
+    for (const key of [
+      "SENDGRID_API_KEY",
+      "DIGEST_EMAIL_FROM",
+      "DIGEST_EMAIL_TO"
+    ] as const) {
+      if (env[key]) continue;
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [key],
+        message: `${key} is required when SEND_EMAIL=true`
+      });
+    }
+  });
 
 export type AppEnv = z.infer<typeof envSchema>;
 

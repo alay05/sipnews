@@ -3,6 +3,7 @@ import { DigestPipeline, withTimeout } from "../src/services/digestPipeline.js";
 import { InMemoryStore } from "../src/services/store.js";
 import type { AppUser, StoryCluster } from "../src/types/articles.js";
 import type { NewsSummarizer } from "../src/services/ai.js";
+import type { EmailClient } from "../src/services/email.js";
 import type { SmsClient } from "../src/services/twilio.js";
 
 describe("DigestPipeline", () => {
@@ -79,6 +80,45 @@ describe("DigestPipeline", () => {
     expect(digest.sentAt).toBeUndefined();
     expect(smsClient.sentBodies).toHaveLength(0);
   });
+
+  it("can deliver an existing same-day digest by email once", async () => {
+    const store = new InMemoryStore();
+    const user = appUser();
+    await store.ensureUser(user);
+
+    const emailClient = new RecordingEmailClient();
+    const pipeline = new DigestPipeline(
+      store,
+      new EmptySummarizer(),
+      new RecordingSmsClient(),
+      emailClient
+    );
+
+    const first = await pipeline.run({
+      user,
+      sources: [],
+      publicBaseUrl: "https://digest.example",
+      sendSms: false,
+      sendEmail: true,
+      emailFrom: "digest@example.com",
+      emailTo: "andrew@example.com",
+      digestDate: new Date("2026-06-05T11:00:00Z")
+    });
+    const second = await pipeline.run({
+      user,
+      sources: [],
+      publicBaseUrl: "https://digest.example",
+      sendSms: false,
+      sendEmail: true,
+      emailFrom: "digest@example.com",
+      emailTo: "andrew@example.com",
+      digestDate: new Date("2026-06-05T15:00:00Z")
+    });
+
+    expect(second.id).toBe(first.id);
+    expect(second.sentAt).toBeInstanceOf(Date);
+    expect(emailClient.sentSubjects).toHaveLength(1);
+  });
 });
 
 describe("withTimeout", () => {
@@ -104,6 +144,14 @@ class RecordingSmsClient implements SmsClient {
 
   async sendSms(message: { body: string }): Promise<void> {
     this.sentBodies.push(message.body);
+  }
+}
+
+class RecordingEmailClient implements EmailClient {
+  readonly sentSubjects: string[] = [];
+
+  async sendEmail(message: { subject: string }): Promise<void> {
+    this.sentSubjects.push(message.subject);
   }
 }
 

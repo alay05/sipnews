@@ -2,6 +2,7 @@ import express from "express";
 import { createSummarizer } from "./services/ai.js";
 import { DigestPipeline } from "./services/digestPipeline.js";
 import { InMemoryStore, type AppStore } from "./services/store.js";
+import { createEmailClient } from "./services/email.js";
 import { createSmsClient } from "./services/twilio.js";
 import { createDigestRouter } from "./routes/digests.js";
 import { createJobsRouter } from "./routes/jobs.js";
@@ -21,7 +22,10 @@ export function buildApp(env: AppEnv, store: AppStore = new InMemoryStore()) {
     accountSid: env.TWILIO_ACCOUNT_SID,
     authToken: env.TWILIO_AUTH_TOKEN
   });
-  const pipeline = new DigestPipeline(store, summarizer, smsClient);
+  const emailClient = createEmailClient({
+    apiKey: env.SENDGRID_API_KEY
+  });
+  const pipeline = new DigestPipeline(store, summarizer, smsClient, emailClient);
 
   app.get("/health", (_req, res) => res.json({ ok: true }));
   app.use("/webhooks/twilio", createTwilioRouter(store, env));

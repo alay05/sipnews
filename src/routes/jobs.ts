@@ -35,7 +35,8 @@ export function createJobsRouter(
       logJobStage(requestId, "run_pipeline", {
         userCount: users.length,
         sourceCount: sources.length,
-        sendSms: env.SEND_SMS
+        sendSms: env.SEND_SMS,
+        sendEmail: env.SEND_EMAIL
       });
       const digests = await Promise.all(
         users.map((user) =>
@@ -45,6 +46,9 @@ export function createJobsRouter(
             publicBaseUrl: env.PUBLIC_BASE_URL,
             smsFrom: env.TWILIO_FROM_NUMBER,
             sendSms: env.SEND_SMS,
+            emailFrom: env.DIGEST_EMAIL_FROM,
+            emailTo: env.DIGEST_EMAIL_TO,
+            sendEmail: env.SEND_EMAIL,
             sourceFetchTimeoutMs: env.SOURCE_FETCH_TIMEOUT_MS,
             requestId
           })

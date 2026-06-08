@@ -1,6 +1,6 @@
-# Daily AI News SMS Digest
+# Daily AI News Digest
 
-This repo is a TypeScript/Node.js scaffold for a personal daily news digest app. It loads configured sources, fetches articles, normalizes and deduplicates them, ranks story clusters, summarizes the top items, sends a Twilio SMS, and accepts inbound SMS feedback.
+This repo is a TypeScript/Node.js scaffold for a personal daily news digest app. It loads configured sources, fetches articles, normalizes and deduplicates them, ranks story clusters, summarizes the top items, sends a Twilio SMS or SendGrid email, and accepts inbound SMS feedback.
 
 The implementation is intentionally MVP-sized. It uses an in-memory store at runtime, with a Postgres + `pgvector` migration included for the production data model.
 
@@ -43,7 +43,7 @@ The implementation is intentionally MVP-sized. It uses an in-memory store at run
 
 ## Runtime Shape
 
-- `POST /jobs/daily-digest` runs the fetch, dedupe, rank, summarize, and SMS pipeline.
+- `POST /jobs/daily-digest` runs the fetch, dedupe, rank, summarize, and configured delivery pipeline.
 - `POST /webhooks/twilio/inbound` parses Twilio SMS replies such as `+2`, `-3`, `more AI`, `less politics`, `mute CNN`, `save 1`, `why 4`, `HELP`, `STOP`, and `START`.
 - `GET /d/:digestId` returns the stored digest JSON.
 - `GET /f/:signedToken` records one-tap signed feedback from links.
@@ -94,7 +94,7 @@ JOB_SECRET=<same value as production JOB_SECRET>
 
 The endpoint is idempotent by `user_id` and local date, so a same-day retry returns the existing digest instead of sending a duplicate.
 
-For production debugging, set `SEND_SMS=false` to verify fetch/summarization/database behavior without sending a text. Set `DISABLE_GDELT=true` if GDELT is rate-limiting during setup. Job responses and logs include a `requestId` so Render logs can be matched to a failed request.
+For production debugging, set `SEND_SMS=false` to verify fetch/summarization/database behavior without sending a text. To deliver by email instead, set `SEND_EMAIL=true`, `SENDGRID_API_KEY`, `DIGEST_EMAIL_FROM`, and `DIGEST_EMAIL_TO`. Set `DISABLE_GDELT=true` if GDELT is rate-limiting during setup. Job responses and logs include a `requestId` so Render logs can be matched to a failed request.
 
 ## Personalization Model
 

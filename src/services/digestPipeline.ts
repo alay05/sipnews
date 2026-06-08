@@ -1,11 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { createAdapter } from "../adapters/index.js";
+import { buildDigestEmail } from "../core/email.js";
 import { buildDigestSms } from "../core/sms.js";
 import { dedupeArticles } from "../core/dedupe.js";
 import { normalizeArticle } from "../core/normalize.js";
 import { rankClusters, selectCategoryBalancedClusters } from "../core/ranking.js";
 import type { AppUser, SourceConfig, Digest } from "../types/articles.js";
 import type { NewsSummarizer } from "./ai.js";
+import { ConsoleEmailClient, type EmailClient } from "./email.js";
 import type { SmsClient } from "./twilio.js";
 import type { AppStore } from "./store.js";
 
@@ -15,6 +17,9 @@ export interface DigestPipelineOptions {
   publicBaseUrl: string;
   smsFrom?: string;
   sendSms?: boolean;
+  emailFrom?: string;
+  emailTo?: string;
+  sendEmail?: boolean;
   sourceFetchTimeoutMs?: number;
   digestDate?: Date;
   requestId?: string;
@@ -24,7 +29,8 @@ export class DigestPipeline {
   constructor(
     private readonly store: AppStore,
     private readonly summarizer: NewsSummarizer,
-    private readonly smsClient: SmsClient
+    private readonly smsClient: SmsClient,
+    private readonly emailClient: EmailClient = new ConsoleEmailClient()
   ) {}
 
   async run(options: DigestPipelineOptions): Promise<Digest> {
@@ -99,17 +105,45 @@ export class DigestPipeline {
     digest: Digest,
     options: DigestPipelineOptions
   ): Promise<void> {
-    if (digest.sentAt || !options.smsFrom || options.sendSms === false) return;
+    if (digest.sentAt) return;
 
-    logStage(options.requestId, "send_sms", {
-      digestId: digest.id,
-      userId: options.user.id
-    });
-    await this.smsClient.sendSms({
-      to: options.user.phoneNumber,
-      from: options.smsFrom,
-      body: digest.smsBody
-    });
+    const deliveries: Array<Promise<void>> = [];
+
+    if (options.smsFrom && options.sendSms !== false) {
+      logStage(options.requestId, "send_sms", {
+        digestId: digest.id,
+        userId: options.user.id
+      });
+      deliveries.push(
+        this.smsClient.sendSms({
+          to: options.user.phoneNumber,
+          from: options.smsFrom,
+          body: digest.smsBody
+        })
+      );
+    }
+
+    if (options.sendEmail) {
+      if (!options.emailFrom || !options.emailTo) {
+        throw new Error("DIGEST_EMAIL_FROM and DIGEST_EMAIL_TO are required for email delivery");
+      }
+
+      logStage(options.requestId, "send_email", {
+        digestId: digest.id,
+        userId: options.user.id
+      });
+      deliveries.push(
+        this.emailClient.sendEmail({
+          to: options.emailTo,
+          from: options.emailFrom,
+          ...buildDigestEmail(digest, options.publicBaseUrl)
+        })
+      );
+    }
+
+    if (deliveries.length === 0) return;
+
+    await Promise.all(deliveries);
     digest.sentAt = new Date();
     await this.store.saveDigest(digest);
   }

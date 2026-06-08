@@ -53,6 +53,7 @@ function env(overrides: Partial<AppEnv> = {}): AppEnv {
     DISABLE_GDELT: false,
     SEND_SMS: false,
     TWILIO_VALIDATE_WEBHOOKS: false,
+    SEND_EMAIL: false,
     PERSONAL_USER_ID: "personal",
     PERSONAL_TIMEZONE: "America/New_York",
     DIGEST_SEND_HOUR: 7,
