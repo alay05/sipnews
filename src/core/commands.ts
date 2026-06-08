@@ -1,5 +1,5 @@
 export const COMMAND_PROMPT =
-  "Want to tune future digests? Text HELP to your digest number for command options.";
+  "Want to tune future digests? Text HELP for command options.";
 
 export const HELP_RESPONSE = [
   "Command options:",
