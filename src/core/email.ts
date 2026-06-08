@@ -6,22 +6,19 @@ export interface DigestEmail {
   html: string;
 }
 
-export function buildDigestEmail(digest: Digest, publicBaseUrl: string): DigestEmail {
+export function buildDigestEmail(digest: Digest, _publicBaseUrl: string): DigestEmail {
   const dateLabel = digest.localDate;
   const subject = `Daily news digest - ${dateLabel}`;
-  const readAllUrl = `${publicBaseUrl}/d/${digest.id}`;
 
   const textBlocks = [
     "Daily news digest",
     ...digest.items.map(formatTextItem),
-    `Read all: ${readAllUrl}`,
     "Reply by SMS with +2, -3, more AI, less politics, or mute Source."
   ];
 
   const htmlBlocks = [
     "<h1>Daily news digest</h1>",
     ...digest.items.map(formatHtmlItem),
-    `<p><a href="${escapeHtml(readAllUrl)}">Read all stories</a></p>`,
     "<p>Reply by SMS with +2, -3, more AI, less politics, or mute Source.</p>"
   ];
 

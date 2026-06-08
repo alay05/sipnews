@@ -44,7 +44,7 @@ export class OpenAINewsSummarizer implements NewsSummarizer {
         {
           role: "system",
           content:
-            "Summarize news clusters into concise SMS-friendly digest items. Return compact JSON only."
+            "Summarize news clusters into useful daily news digest items. For each shortSummary, write 4-6 substantive sentences covering the core facts, context, why it matters, and concrete implications for a tech-focused reader. Keep titles concise. Return compact JSON only."
         },
         {
           role: "user",

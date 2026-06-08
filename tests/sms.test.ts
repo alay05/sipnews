@@ -27,4 +27,5 @@ describe("sms", () => {
   it("caps long SMS bodies", () => {
     expect(enforceSmsLength("x".repeat(2000)).length).toBeLessThanOrEqual(1450);
   });
+
 });

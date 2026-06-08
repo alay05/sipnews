@@ -9,9 +9,12 @@ describe("email", () => {
     expect(email.subject).toBe("Daily news digest - 2026-06-05");
     expect(email.text).toContain("1. AI tools ship new coding features");
     expect(email.text).toContain("https://example.com/a");
+    expect(email.text).not.toContain("Read all:");
     expect(email.html).toContain("<h1>Daily news digest</h1>");
     expect(email.html).toContain("<h2>1. AI tools ship new coding features</h2>");
     expect(email.html).toContain('href="https://example.com/a"');
+    expect(email.html).not.toContain("Read all stories");
+    expect(email.html).toContain("These updates matter because");
   });
 });
 
@@ -27,7 +30,8 @@ function digest(): Digest {
         index: 1,
         clusterId: "cluster",
         title: "AI tools ship new coding features",
-        shortSummary: "Several AI coding tools added agentic workflows.",
+        shortSummary:
+          "Several AI coding tools added agentic workflows that can plan, edit, and test changes across larger parts of a codebase. The most important shift is that these tools are moving from autocomplete into task execution, which changes how developers review work and manage quality. These updates matter because they can compress routine implementation time, but they also raise the bar for testing, code review, and clear product specs. For a startup or engineering team, the practical takeaway is to pilot these tools on bounded internal tasks before trusting them with broad production changes.",
         sourceLinks: [{ sourceName: "Source", url: "https://example.com/a" }],
         topics: ["ai", "programming"]
       }
