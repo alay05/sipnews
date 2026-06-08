@@ -1,14 +1,11 @@
 import "dotenv/config";
 import { z } from "zod";
 
-const optionalNonEmptyString = z.preprocess(
-  (value) => (value === "" ? undefined : value),
-  z.string().optional()
-);
-const optionalEmail = z.preprocess(
-  (value) => (value === "" ? undefined : value),
-  z.string().email().optional()
-);
+const blankToUndefined = (value: unknown): unknown =>
+  value === "" ? undefined : value;
+
+const optionalString = z.preprocess(blankToUndefined, z.string().optional());
+const optionalEmail = z.preprocess(blankToUndefined, z.string().email().optional());
 
 const envSchema = z
   .object({
@@ -34,7 +31,7 @@ const envSchema = z
     .enum(["true", "false"])
     .default("false")
     .transform((value) => value === "true"),
-  SENDGRID_API_KEY: optionalNonEmptyString,
+  SENDGRID_API_KEY: optionalString,
   DIGEST_EMAIL_FROM: optionalEmail,
   DIGEST_EMAIL_TO: optionalEmail,
   SEND_EMAIL: z

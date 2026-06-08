@@ -10,14 +10,11 @@ import type {
   UserPreferences
 } from "../types/articles.js";
 import type { FeedbackCommand } from "../core/feedback.js";
+import { feedbackContextForCommand } from "./feedbackService.js";
 import {
   clonePreferences,
   emptyPreferences,
   feedbackEventId,
-  feedbackItemIndex,
-  feedbackSentiment,
-  feedbackSource,
-  feedbackTopic,
   type AppStore,
   type FeedbackContext
 } from "./store.js";
@@ -299,6 +296,7 @@ export class PgStore implements AppStore {
     command: FeedbackCommand,
     context?: FeedbackContext
   ): Promise<void> {
+    const feedback = feedbackContextForCommand(command, context);
     await this.pool.query(
       `INSERT INTO feedback_events (
         id, user_id, digest_id, item_index, command, sentiment, topic,
@@ -307,13 +305,13 @@ export class PgStore implements AppStore {
       [
         feedbackEventId(),
         userId,
-        context?.digestId ?? null,
-        context?.itemIndex ?? feedbackItemIndex(command) ?? null,
+        feedback.digestId ?? null,
+        feedback.itemIndex ?? null,
         command.type,
-        context?.sentiment ?? feedbackSentiment(command) ?? null,
-        context?.topic ?? feedbackTopic(command) ?? null,
-        context?.sourceName ?? feedbackSource(command) ?? null,
-        context?.rawBody ?? command.raw
+        feedback.sentiment ?? null,
+        feedback.topic ?? null,
+        feedback.sourceName ?? null,
+        feedback.rawBody ?? command.raw
       ]
     );
   }

@@ -1,11 +1,14 @@
 import { Router } from "express";
 import twilio from "twilio";
-import { applyFeedback, parseFeedbackCommand } from "../core/feedback.js";
+import { parseFeedbackCommand } from "../core/feedback.js";
 import type { AppEnv } from "../config/env.js";
 import {
+  feedbackContextForCommand,
   feedbackContextForDigestItem,
+  saveFeedbackAndPreferences
+} from "../services/feedbackService.js";
+import {
   feedbackItemIndex,
-  feedbackSentiment,
   type AppStore,
   type FeedbackContext
 } from "../services/store.js";
@@ -29,19 +32,10 @@ export function createTwilioRouter(store: AppStore, env: AppEnv): Router {
 
     const command = parseFeedbackCommand(body);
     const feedbackContext = await contextForCommand(store, user.id, command, body);
-    await store.saveFeedback(user.id, command, feedbackContext);
+    await saveFeedbackAndPreferences(store, user.id, command, feedbackContext);
 
     if (command.type === "stop") await store.updateUserActive(user.id, false);
     if (command.type === "start") await store.updateUserActive(user.id, true);
-
-    const preferences = await store.getPreferences(user.id);
-    await store.savePreferences(
-      user.id,
-      applyFeedback(preferences, command, {
-        sourceName: feedbackContext?.sourceName,
-        topics: feedbackContext?.topics
-      })
-    );
 
     res.type("text/xml").send(toTwiml(replyFor(command.type)));
   });
@@ -99,17 +93,18 @@ async function contextForCommand(
   const itemIndex = feedbackItemIndex(command);
   const latestDigest = await store.getLatestDigestForUser(userId);
   if (!latestDigest) {
-    return { rawBody, itemIndex, sentiment: feedbackSentiment(command) };
+    return feedbackContextForCommand(command, { rawBody, itemIndex });
   }
 
-  if (!itemIndex) return { digestId: latestDigest.id, rawBody };
+  if (!itemIndex) {
+    return feedbackContextForCommand(command, { digestId: latestDigest.id, rawBody });
+  }
 
   const item = await store.getDigestItem(latestDigest.id, itemIndex);
-  return {
+  return feedbackContextForCommand(command, {
     ...(item ? feedbackContextForDigestItem(item) : {}),
     digestId: latestDigest.id,
     itemIndex,
-    rawBody,
-    sentiment: feedbackSentiment(command)
-  };
+    rawBody
+  });
 }

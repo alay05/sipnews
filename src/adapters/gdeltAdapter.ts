@@ -42,7 +42,7 @@ export class GdeltAdapter implements SourceAdapter {
 }
 
 export function buildGdeltUrl(source: SourceConfig): string {
-  const config = getGdeltConfig(source);
+  const config = (source.config ?? {}) as GdeltConfig;
   const query = buildGdeltQuery(config);
   if (!query) {
     throw new Error(`GDELT source ${source.id} requires config.query or domain filters`);
@@ -95,10 +95,6 @@ function buildGdeltQuery(config: GdeltConfig): string {
   }
 
   return parts.join(" ").trim();
-}
-
-function getGdeltConfig(source: SourceConfig): GdeltConfig {
-  return source.config ?? {};
 }
 
 function parseGdeltDate(value?: string): Date | undefined {

@@ -1,13 +1,10 @@
 import { Router } from "express";
-import {
-  applyFeedback,
-  parseFeedbackCommand,
-  verifyFeedbackToken
-} from "../core/feedback.js";
+import { parseFeedbackCommand, verifyFeedbackToken } from "../core/feedback.js";
 import {
   feedbackContextForDigestItem,
-  type AppStore
-} from "../services/store.js";
+  saveFeedbackAndPreferences
+} from "../services/feedbackService.js";
+import type { AppStore } from "../services/store.js";
 
 export function createDigestRouter(store: AppStore, feedbackSecret: string): Router {
   const router = Router();
@@ -36,20 +33,12 @@ export function createDigestRouter(store: AppStore, feedbackSecret: string): Rou
 
       const item = await store.getDigestItem(token.digestId, token.itemIndex);
       const context = item ? feedbackContextForDigestItem(item) : undefined;
-      await store.saveFeedback(digest.userId, command, {
+      await saveFeedbackAndPreferences(store, digest.userId, command, {
         ...context,
         digestId: token.digestId,
         itemIndex: token.itemIndex,
         sentiment: token.sentiment
       });
-      const preferences = await store.getPreferences(digest.userId);
-      await store.savePreferences(
-        digest.userId,
-        applyFeedback(preferences, command, {
-          sourceName: context?.sourceName,
-          topics: context?.topics
-        })
-      );
       res.json({ ok: true, feedback: token.sentiment });
     } catch {
       res.status(400).json({ error: "Invalid feedback token" });

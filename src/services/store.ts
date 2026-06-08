@@ -154,19 +154,6 @@ export function clonePreferences(preferences: UserPreferences): UserPreferences 
   };
 }
 
-export function sourceNameForDigestItem(item: DigestItem): string | undefined {
-  return item.sourceLinks[0]?.sourceName;
-}
-
-export function feedbackContextForDigestItem(item: DigestItem): FeedbackContext {
-  return {
-    itemIndex: item.index,
-    topic: item.topics[0],
-    topics: item.topics,
-    sourceName: sourceNameForDigestItem(item)
-  };
-}
-
 export function feedbackSentiment(
   command: FeedbackCommand
 ): "like" | "dislike" | undefined {
