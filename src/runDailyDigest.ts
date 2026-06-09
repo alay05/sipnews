@@ -42,7 +42,8 @@ async function main(): Promise<void> {
     emailFrom: env.DIGEST_EMAIL_FROM,
     emailTo: env.DIGEST_EMAIL_TO,
     sendEmail: env.SEND_EMAIL,
-    sourceFetchTimeoutMs: env.SOURCE_FETCH_TIMEOUT_MS
+    sourceFetchTimeoutMs: env.SOURCE_FETCH_TIMEOUT_MS,
+    maxArticleAgeDays: env.MAX_ARTICLE_AGE_DAYS
   });
 
   console.log(JSON.stringify({ id: digest.id, itemCount: digest.items.length }, null, 2));

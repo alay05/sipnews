@@ -50,6 +50,7 @@ export function createJobsRouter(
             emailTo: env.DIGEST_EMAIL_TO,
             sendEmail: env.SEND_EMAIL,
             sourceFetchTimeoutMs: env.SOURCE_FETCH_TIMEOUT_MS,
+            maxArticleAgeDays: env.MAX_ARTICLE_AGE_DAYS,
             requestId
           })
         )

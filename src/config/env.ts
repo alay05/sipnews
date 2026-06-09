@@ -16,6 +16,7 @@ const envSchema = z
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().default("gpt-4.1-mini"),
   SOURCE_FETCH_TIMEOUT_MS: z.coerce.number().int().min(1000).default(15000),
+  MAX_ARTICLE_AGE_DAYS: z.coerce.number().int().min(1).max(30).default(7),
   DISABLE_GDELT: z
     .enum(["true", "false"])
     .default("false")

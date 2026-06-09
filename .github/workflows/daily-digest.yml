@@ -2,8 +2,8 @@ name: Daily Digest
 
 on:
   schedule:
-    # Temporary scheduler test. Revert to the daily 6:30 AM Eastern schedule after confirming scheduled runs fire.
-    - cron: "*/5 * * * *"
+    - cron: "0 5 * * *"
+      timezone: "America/New_York"
   workflow_dispatch:
 
 jobs:

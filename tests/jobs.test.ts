@@ -50,6 +50,7 @@ function env(overrides: Partial<AppEnv> = {}): AppEnv {
     SOURCES_CONFIG_PATH: "config/sources.example.json",
     OPENAI_MODEL: "gpt-4.1-mini",
     SOURCE_FETCH_TIMEOUT_MS: 15000,
+    MAX_ARTICLE_AGE_DAYS: 7,
     DISABLE_GDELT: false,
     SEND_SMS: false,
     TWILIO_VALIDATE_WEBHOOKS: false,

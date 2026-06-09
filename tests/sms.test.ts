@@ -18,7 +18,7 @@ describe("sms", () => {
       "https://digest.local"
     );
 
-    expect(body).toContain("Text HELP to your digest number");
+    expect(body).toContain("Text HELP for command options.");
     expect(body).not.toContain("Reply +2");
     expect(body).toContain("https://example.com/a");
     expect(body).toContain("*1. AI tools ship new coding features*");

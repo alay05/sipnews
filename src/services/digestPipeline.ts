@@ -5,6 +5,7 @@ import { buildDigestSms } from "../core/sms.js";
 import { dedupeArticles } from "../core/dedupe.js";
 import { normalizeArticle } from "../core/normalize.js";
 import { rankClusters, selectCategoryBalancedClusters } from "../core/ranking.js";
+import { filterRecentArticles } from "../core/recency.js";
 import type {
   AppUser,
   Article,
@@ -28,6 +29,7 @@ export interface DigestPipelineOptions {
   emailTo?: string;
   sendEmail?: boolean;
   sourceFetchTimeoutMs?: number;
+  maxArticleAgeDays?: number;
   digestDate?: Date;
   requestId?: string;
 }
@@ -55,7 +57,11 @@ export class DigestPipeline {
     const rawArticles = await this.fetchSources(options);
 
     logStage(options.requestId, "normalize_articles", { count: rawArticles.length });
-    const articles = rawArticles.map(normalizeArticle);
+    const articles = filterRecentArticles(rawArticles.map(normalizeArticle), {
+      now: digestDate,
+      maxAgeDays: options.maxArticleAgeDays ?? 7
+    });
+    logStage(options.requestId, "filter_recent_articles", { count: articles.length });
     await this.store.saveArticles(articles);
 
     const clusters = await this.selectClusters(articles, options, digestDate);
