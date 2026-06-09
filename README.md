@@ -2,7 +2,7 @@
 
 A TypeScript/Node.js app that builds a daily AI-curated news digest from configurable sources, stores it in Postgres, and delivers it by SendGrid email. It is currently set up as a solo personal digest, but the data model is user-scoped so it can later expand to a small multi-user version.
 
-The app is designed to run once per day from a scheduled GitHub Action. Each run fetches configured news sources, filters and deduplicates overlapping articles, ranks the best story clusters against the user's preferences, asks OpenAI for concise digest writeups, saves the result, and sends it through the configured delivery channel. Twilio SMS delivery and SMS feedback are supported, but SMS should stay disabled until the sender number is compliant and verified.
+The app is designed to run once per day from a Render Cron Job. Each run fetches configured news sources, filters and deduplicates overlapping articles, ranks the best story clusters against the user's preferences, asks OpenAI for concise digest writeups, saves the result, and sends it through the configured delivery channel. Twilio SMS delivery and SMS feedback are supported, but SMS should stay disabled until the sender number is compliant and verified.
 
 ## What It Does
 
@@ -13,11 +13,11 @@ The app is designed to run once per day from a scheduled GitHub Action. Each run
 - Stores users, fetched articles, story clusters, digests, digest items, feedback, and preference weights in Postgres.
 - Sends the digest by email through SendGrid, with optional Twilio SMS delivery using the same digest content.
 - Accepts Twilio SMS feedback like `+1`, `-2`, `more AI`, and `mute CNN`, then updates future ranking preferences.
-- Runs daily from GitHub Actions by calling the deployed Render job endpoint.
+- Runs daily from Render Cron by calling the deployed job endpoint.
 
 ## How It Works
 
-The application is an Express API with one main scheduled job endpoint. GitHub Actions calls `POST /jobs/daily-digest` at 7:00 AM `America/New_York`, passing `x-job-secret` so the endpoint is not publicly runnable without the shared secret.
+The application is an Express API with one main scheduled job endpoint. Render Cron calls `POST /jobs/daily-digest`, passing `x-job-secret` so the endpoint is not publicly runnable without the shared secret.
 
 The daily pipeline lives in `src/services/digestPipeline.ts`:
 
@@ -45,7 +45,6 @@ src/types/         Shared TypeScript types
 tests/             Unit tests for adapters, core logic, services, and routes
 config/            Source configuration examples
 migrations/        Postgres schema
-.github/workflows/ Daily GitHub Actions schedule
 ```
 
 ## Local Setup
@@ -155,7 +154,7 @@ Recommended setup:
 - **Neon Postgres** for persistence.
 - **SendGrid** for email delivery.
 - **Twilio** only if SMS delivery or SMS feedback is enabled.
-- **GitHub Actions** for the daily schedule.
+- **Render Cron Job** for the daily schedule.
 
 Render should build and start with:
 
@@ -168,14 +167,22 @@ Set the production env vars in Render. Use `PUBLIC_BASE_URL` with the Render URL
 
 ## Scheduling
 
-The workflow in `.github/workflows/daily-digest.yml` runs every day at 7:00 AM `America/New_York` and can also be triggered manually.
+Use a Render Cron Job to call the deployed job endpoint once per day.
 
-Set these GitHub Actions secrets:
+Cron command:
+
+```sh
+curl -fsS -X POST "$DIGEST_JOB_URL" -H "x-job-secret: $JOB_SECRET"
+```
+
+Cron env vars:
 
 ```env
 DIGEST_JOB_URL=https://your-render-app.onrender.com/jobs/daily-digest
-JOB_SECRET=same-value-as-render
+JOB_SECRET=same-value-as-web-service
 ```
+
+Render cron schedules use UTC. For 7:00 AM New York time during daylight saving time, use `0 11 * * *`; during standard time, use `0 12 * * *`.
 
 The job is idempotent by user and local date. If a digest has already been sent today, rerunning the job will reuse it instead of sending a duplicate.
 
