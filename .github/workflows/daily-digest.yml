@@ -2,36 +2,15 @@ name: Daily Digest
 
 on:
   schedule:
-    # 6:30 AM America/New_York. UTC changes with daylight saving time:
-    # EDT (UTC-4) uses 10:30 UTC; EST (UTC-5) uses 11:30 UTC.
-    - cron: "30 10 * * *"
-    - cron: "30 11 * * *"
+    # Temporary scheduler test. Revert to the daily 6:30 AM Eastern schedule after confirming scheduled runs fire.
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 jobs:
   trigger-digest:
     runs-on: ubuntu-latest
     steps:
-      - name: Check Eastern offset
-        id: schedule-gate
-        run: |
-          if [ "${{ github.event_name }}" != "schedule" ]; then
-            echo "should_run=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          eastern_offset="$(TZ=America/New_York date +%z)"
-          schedule="${{ github.event.schedule }}"
-
-          if { [ "$eastern_offset" = "-0400" ] && [ "$schedule" = "30 10 * * *" ]; } ||
-             { [ "$eastern_offset" = "-0500" ] && [ "$schedule" = "30 11 * * *" ]; }; then
-            echo "should_run=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "should_run=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Trigger daily digest
-        if: steps.schedule-gate.outputs.should_run == 'true'
         run: |
           curl -fsS -X POST "$DIGEST_JOB_URL" \
             -H "x-job-secret: $JOB_SECRET"
