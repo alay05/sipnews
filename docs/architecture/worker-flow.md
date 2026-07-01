@@ -14,7 +14,7 @@ The worker owns execution that does not need to happen inside an HTTP request:
 
 ## Flow
 
-1. Scheduler or operator starts `apps/worker/src/index.ts`.
+1. Scheduler or operator starts `apps/worker/src/bootstrap.ts`.
 2. Worker reads `DATABASE_URL`, `SOURCES_CONFIG_PATH`, delivery settings, and model settings.
 3. Worker loads source definitions and creates adapters for each enabled source.
 4. Worker persists ingestion runs, articles, clusters, summaries, and digests through `packages/data`.
@@ -30,4 +30,4 @@ The worker owns execution that does not need to happen inside an HTTP request:
 
 ## Current Env
 
-`apps/worker/.env.example` documents the required worker runtime settings. `SOURCES_CONFIG_PATH` should usually point at `../../config/sources.json` when running through `npm -w @sms-news/worker`.
+`apps/worker/.env.example` documents the required worker runtime settings. It now also includes `THE_GUARDIAN_API_KEY`. `SOURCES_CONFIG_PATH` should usually point at `../../config/sources.json` when running through npm workspaces.

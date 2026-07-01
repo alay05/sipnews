@@ -4,14 +4,15 @@ Use this document when deciding where a file, env variable, or future extraction
 
 ## apps/api
 
-Owns implemented HTTP behavior:
+Owns HTTP behavior:
 
 - Express app construction and routing.
 - `GET /health`.
 - Authenticated `/v1/me/*` product routes.
 - Clerk JWT verification and generalized user provisioning.
+- Clerk backend user lookup when the JWT omits email.
 - Postgres-backed user, settings, digest, and feedback access through `packages/data`.
-- Server-side secrets, including `DATABASE_URL`, `CLERK_JWT_ISSUER`, `CLERK_JWT_AUDIENCE`, and optional `ALLOWED_USER_EMAILS`.
+- Server-side secrets, including `DATABASE_URL`, `CLERK_JWT_ISSUER`, `CLERK_SECRET_KEY`, `CLERK_JWT_AUDIENCE`, and optional `ALLOWED_USER_EMAILS`.
 
 ## apps/worker
 
@@ -23,22 +24,18 @@ Owns background execution:
 - Source config loading through `SOURCES_CONFIG_PATH`.
 - SendGrid delivery and OpenAI summarization runtime settings.
 
-Current state: `apps/worker/src/index.ts` runs the bucketed digest worker against `packages/core` and `packages/data`.
+Current state: `apps/worker/src/bootstrap.ts` loads worker env first, then starts the bucketed worker against `packages/core` and `packages/data`.
 
 ## apps/web
 
-Owns future browser UI:
+Owns browser UI:
 
 - Clerk browser integration.
 - Public API base URL.
 - Client-side routes, components, and user interaction.
 - Public `NEXT_PUBLIC_*` variables only.
 
-The web workspace should use `NEXT_PUBLIC_SMS_NEWS_API_URL` for API calls and `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` for Clerk browser auth. It must not receive server secrets.
-
-## packages/config
-
-Owns reusable typed configuration helpers after extraction. Do not move app-specific secrets into this package unless the package exposes typed readers consumed by an app.
+The web workspace should use `NEXT_PUBLIC_SMS_NEWS_API_URL` for API calls and `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` for Clerk browser auth. It also needs `CLERK_SECRET_KEY` for server-side Clerk helpers inside the Next.js app.
 
 ## packages/contracts
 
@@ -56,5 +53,5 @@ Owns persistence interfaces, migrations-adjacent data access, and database imple
 
 - Source config ownership: `config/*.json` defines article sources. It does not own user identity, Clerk settings, delivery credentials, or API base URLs.
 - Delivery ownership: email delivery is supported through worker-owned SendGrid settings.
-- Auth ownership: `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` belongs to `apps/web`; Clerk JWT verification settings belong to `apps/api`.
+- Auth ownership: `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` belongs to `apps/web`; `CLERK_SECRET_KEY` is required by both `apps/web` and `apps/api`; Clerk JWT verification settings belong to `apps/api`.
 - Package extraction should preserve behavior and tests before changing runtime flow.

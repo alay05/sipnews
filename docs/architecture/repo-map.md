@@ -1,38 +1,36 @@
 # Repo Map
 
-This repository is in the middle of a workspace restructure. The map below describes the current tree and the intended ownership boundaries agents should preserve while completing adjacent tasks.
+This repository is already operating as a multi-runtime monorepo.
 
 ## Root
 
-- `package.json`: npm workspace declaration and root scripts.
-- `package-lock.json`: dependency lockfile. Do not edit unless the task owns dependency sync.
-- `tsconfig.json` and `tsconfig.build.json`: root TypeScript configuration during the transition.
-- `vitest.config.ts`: current test runner configuration.
-- `.env.example`: pointer to workspace env examples.
+- `package.json`: npm workspaces and root scripts
+- `package-lock.json`: lockfile
+- `.env.example`: pointer for workspace env files plus first-user seed values
+- `render.yaml`: Render blueprint for web, api, and worker cron services
 
-## Apps
+## Applications
 
-- `apps/api/`: implemented Express product API for authenticated account endpoints.
-- `apps/worker/`: implemented bucketed digest worker package.
-- `apps/web/`: implemented Clerk-authenticated web app shell for onboarding, settings, and digest history.
+- `apps/web`: Next.js app with Clerk sign-in, onboarding, settings, and digest history
+- `apps/api`: Express API with Clerk JWT verification and Postgres-backed product routes
+- `apps/worker`: bucketed digest pipeline for fetch, cluster, summarize, and deliver
 
-## Packages
+## Shared Packages
 
-The packages exist as workspace scaffolds and should become the home for shared code as later tasks extract behavior from `apps/api`.
-
-- `packages/config/`: shared typed config helpers.
-- `packages/contracts/`: shared request, response, and event contracts.
-- `packages/core/`: pure digest/domain logic.
-- `packages/data/`: persistence interfaces and implementations.
+- `packages/contracts`: shared request and response schemas
+- `packages/core`: deterministic digest logic
+- `packages/data`: repository types and Postgres implementations
 
 ## Runtime Assets
 
-- `config/sources.example.json`: template for source definitions.
-- `config/sources.json`: local source config, ignored by git.
-- `migrations/001_init.sql`: current Postgres schema.
-- `tests/`: existing Vitest coverage for the API-era implementation.
+- `config/sources.example.json`: template source list
+- `config/sources.json`: local source config
+- `migrations/001_init.sql`: canonical schema
+- `scripts/db-migrate.mjs`: schema reset/apply script
+- `scripts/db-seed-first-user.mjs`: clean first-user seed script
 
-## Generated Output
+## Tests
 
-- `dist/` and `apps/*/dist/` are build output.
-- Do not treat generated files as source ownership unless a task explicitly owns build artifacts.
+- `tests/`: root package tests
+- `apps/worker/src/pipeline.test.ts`: worker pipeline coverage
+- `packages/core/tests/`: core digest logic coverage

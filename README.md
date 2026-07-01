@@ -1,47 +1,36 @@
 # SMS News
 
-SMS News is a TypeScript monorepo for an AI-curated daily news digest. The current runtime is split across three workspaces:
+SMS News is a TypeScript monorepo for an AI-curated email news digest. The current system has three deployed runtimes:
 
-- `apps/web`: Clerk-authenticated Next.js account UI.
-- `apps/api`: Express product API for authenticated account, onboarding, settings, digest history, and feedback endpoints.
-- `apps/worker`: bucketed digest worker that fetches sources once, builds shared clusters and summary variants, and assembles per-user email digests.
+- `apps/web`: Next.js account UI with Clerk auth
+- `apps/api`: Express API for onboarding, settings, digest history, and feedback
+- `apps/worker`: scheduled bucketed digest worker
 
-## Workspace Layout
+## Repo Layout
 
 ```text
-apps/api/            Express API for Clerk-authenticated product endpoints
-apps/worker/         Background digest worker using shared core/data packages
-apps/web/            Clerk-authenticated Next.js UI
-packages/config/     Shared configuration package scaffold
-packages/contracts/  Shared API/data contracts
-packages/core/       Shared pure-domain digest logic
-packages/data/       Shared persistence interfaces and implementations
-config/              Source configuration files consumed by the worker
-migrations/          Postgres schema migrations
-tests/               Vitest coverage across legacy and new paths
-docs/architecture/   Repo map, ownership, flow, and merge guidance
+apps/api/            Express API
+apps/web/            Next.js + Clerk account UI
+apps/worker/         Scheduled digest pipeline
+packages/contracts/  Shared DTO and validation schemas
+packages/core/       Pure digest logic: normalize, dedupe, rank, buckets
+packages/data/       Repositories and Postgres access
+config/              Worker source configuration
+migrations/          Postgres schema
+scripts/             DB setup/reset helpers
+render.yaml          Render blueprint for web/api/cron services
+docs/                Architecture and deployment notes
 ```
-
-The root package uses npm workspaces:
-
-```sh
-npm run dev
-npm run build
-npm run typecheck
-npm test
-```
-
-Root scripts delegate to workspace scripts where possible. Do not introduce pnpm, Yarn, or Turborepo for this restructure.
 
 ## Local Setup
 
-Install dependencies from the root when dependency sync is part of your task:
+Install dependencies from the repository root:
 
 ```sh
 npm install
 ```
 
-For local setup, copy the workspace env examples you need:
+Create local config files:
 
 ```sh
 cp apps/api/.env.example apps/api/.env
@@ -50,20 +39,48 @@ cp apps/web/.env.example apps/web/.env
 cp config/sources.example.json config/sources.json
 ```
 
-Then run the workspaces independently:
+Create a root `.env` for first-user database seeding:
 
-```sh
-npm run dev -w @sms-news/api
-npm run dev -w @sms-news/web
-npm run db:setup
+```env
+DATABASE_URL=postgresql://...&sslmode=verify-full
+FIRST_USER_EMAIL=andrewlay05@gmail.com
+FIRST_USER_DISPLAY_NAME=Andrew
+FIRST_USER_TIMEZONE=America/New_York
+FIRST_USER_SEND_HOUR=7
+FIRST_USER_DIGEST_MAX_ITEMS=10
+FIRST_USER_SUMMARY_LENGTH=medium
+FIRST_USER_CATEGORY_COUNTS=world=2,tech=4,ai=3,startups=1
 ```
 
-The API listens on `PORT` and exposes `GET /health` plus authenticated `/v1/me/*` routes.
+Recommended local startup:
+
+```sh
+npm run db:setup
+npm run dev -w @sms-news/api
+npm run dev -w @sms-news/web -- --port 3001
+```
+
+Manual worker runs:
+
+```sh
+npm run worker:prepare
+npm run worker:deliver
+```
+
+## Environment Files
+
+- `apps/api/.env`: `DATABASE_URL`, Clerk verification, API allowlist
+- `apps/worker/.env`: database, OpenAI, SendGrid, Guardian, source config
+- `apps/web/.env`: Clerk browser config and API base URL
+- root `.env`: one-time first-user seed values only
+
+Use `sslmode=verify-full` in every Postgres `DATABASE_URL`.
 
 ## Product API
 
-The API owns authenticated account reads and writes:
+Authenticated routes:
 
+- `GET /health`
 - `GET /v1/me`
 - `GET /v1/me/onboarding`
 - `PUT /v1/me/onboarding`
@@ -73,84 +90,41 @@ The API owns authenticated account reads and writes:
 - `GET /v1/me/digests/:id`
 - `POST /v1/me/feedback`
 
-The API provisions a generalized internal user record from Clerk identity on first authenticated access and persists digest settings through `packages/data`.
+The API provisions a generalized internal user record from Clerk identity, persists user digest settings, and serves digest history from Postgres.
 
-## Worker
+## Worker Model
 
-The worker owns scheduled digest generation:
+The worker does not summarize per user. It:
 
-```sh
-npm run worker:prepare
-npm run worker:deliver
-```
+1. Fetches and deduplicates stories once per run
+2. Builds shared story clusters
+3. Creates one canonical cluster summary
+4. Stores `small`, `medium`, and `large` variants
+5. Assembles each user digest from the shared pool based on category counts and summary length
 
-It requires `DATABASE_URL`, `OPENAI_API_KEY`, `SENDGRID_API_KEY`, `DIGEST_EMAIL_FROM`, and `SOURCES_CONFIG_PATH`.
+This is the active bucketed/shared-summary backend model.
 
-Recommended Render schedule:
+## Render
 
-- `worker:prepare` once daily at `4:00 AM America/New_York`
-- `worker:deliver` hourly
+This repo includes a Render blueprint at [render.yaml](/Users/andrewlay/smsNews/render.yaml).
 
-Render cron or any scheduler should target the worker entrypoint, not an API route.
+Deployment notes:
 
-## Database Setup
+- Use repo-root build commands, not `rootDir: apps/...`
+- Render cron schedules are UTC, not timezone-aware
+- `worker:prepare` is configured for `0 9 * * *` in the blueprint, which is `4:00 AM` Eastern during standard time and drifts by one hour during daylight saving time
 
-For a clean database:
+See [docs/deployment/render.md](/Users/andrewlay/smsNews/docs/deployment/render.md) for the full account-by-account setup checklist.
 
-```sh
-npm run db:migrate
-npm run db:seed:first-user
-```
-
-Or both together:
+## Useful Commands
 
 ```sh
-npm run db:setup
+npm run build
+npm run typecheck
+npm test
+npm run build:web
+npm run build:api
+npm run build:worker
+npm run run:worker:prepare
+npm run run:worker:deliver
 ```
-
-`db:seed:first-user` clears old digests/content tables and seeds the current first user preferences into the clean schema.
-
-## Environment Files
-
-Workspace env examples live next to the workspaces that own them:
-
-- `apps/api/.env.example` covers the Express API, database access, Clerk verification, and optional access gating.
-- `apps/worker/.env.example` covers the worker runtime, source config, summarization, and email delivery.
-- `apps/web/.env.example` covers Clerk browser settings and the API base URL.
-
-The root `.env.example` is only a pointer to those files. New env variables should be added to the owning workspace example and documented in `docs/architecture/workspace-ownership.md`.
-
-## Auth And Web Config
-
-The web workspace is expected to own Clerk browser configuration:
-
-```env
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
-NEXT_PUBLIC_SMS_NEWS_API_URL=http://localhost:3000
-```
-
-Server-side Clerk verification keys belong in the API workspace:
-
-```env
-CLERK_JWT_ISSUER=https://...
-CLERK_JWT_AUDIENCE=
-ALLOWED_USER_EMAILS=you@example.com
-```
-
-Those keys are documented now so agents building the web/API boundary do not invent separate names.
-
-## Source Config Ownership
-
-Source definitions are JSON files under `config/`. The worker reads them via `SOURCES_CONFIG_PATH`, with `config/sources.example.json` as the template and `config/sources.json` ignored for local edits.
-
-Source config describes external article sources only. It should not carry user identity, Clerk settings, delivery credentials, or API base URLs.
-
-## More Architecture Notes
-
-Read these before moving files or splitting behavior across workspaces:
-
-- `docs/architecture/repo-map.md`
-- `docs/architecture/workspace-ownership.md`
-- `docs/architecture/request-flow.md`
-- `docs/architecture/worker-flow.md`
-- `docs/architecture/merge-guidance.md`

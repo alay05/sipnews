@@ -13,7 +13,7 @@ This is the implemented product/API flow after the worker cutover.
 
 1. The web app sends a Clerk bearer token to `/v1/me/*`.
 2. `apps/api/src/auth/clerk.ts` verifies the token using `CLERK_JWT_ISSUER` and optional `CLERK_JWT_AUDIENCE`.
-3. `apps/api/src/routes/me.ts` normalizes the Clerk identity and optionally enforces `ALLOWED_USER_EMAILS`.
+3. `apps/api/src/routes/me.ts` normalizes the Clerk identity, looks up the Clerk primary email when needed, and optionally enforces `ALLOWED_USER_EMAILS`.
 4. If the user does not exist yet, the API provisions a generalized internal user record and default digest settings.
 5. The route reads or updates onboarding/settings/digest data through `packages/data`.
 
@@ -39,5 +39,5 @@ This is the implemented product/API flow after the worker cutover.
 
 ## API Base URLs
 
-- `PUBLIC_BASE_URL` is the API's externally reachable URL, used to build links and validate webhook URLs.
+- `PUBLIC_BASE_URL` is the externally reachable base URL used by the current runtime.
 - `NEXT_PUBLIC_SMS_NEWS_API_URL` is the web client's browser-visible API URL.

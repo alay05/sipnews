@@ -1,0 +1,138 @@
+services:
+  - type: web
+    name: sms-news-web
+    runtime: node
+    plan: starter
+    buildCommand: npm install && npm run build:web
+    startCommand: npm run start:web
+    envVars:
+      - key: NEXT_PUBLIC_SMS_NEWS_API_URL
+        sync: false
+      - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: NEXT_PUBLIC_CLERK_SIGN_IN_URL
+        value: /sign-in
+      - key: NEXT_PUBLIC_CLERK_SIGN_UP_URL
+        value: /sign-up
+      - key: NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL
+        value: /app
+      - key: NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL
+        value: /app/onboarding
+    buildFilter:
+      paths:
+        - apps/web/**
+        - packages/contracts/**
+        - package.json
+        - package-lock.json
+  - type: web
+    name: sms-news-api
+    runtime: node
+    plan: starter
+    buildCommand: npm install && npm run build:api
+    startCommand: npm run start:api
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: CLERK_JWT_ISSUER
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: CLERK_JWT_AUDIENCE
+        sync: false
+      - key: ALLOWED_USER_EMAILS
+        sync: false
+    buildFilter:
+      paths:
+        - apps/api/**
+        - packages/contracts/**
+        - packages/data/**
+        - migrations/**
+        - package.json
+        - package-lock.json
+  - type: cron
+    name: sms-news-worker-prepare
+    runtime: node
+    plan: starter
+    schedule: "0 9 * * *"
+    buildCommand: npm install && npm run build:worker
+    startCommand: npm run run:worker:prepare
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4.1-mini
+      - key: SUMMARY_PROMPT_VERSION
+        value: worker-v1
+      - key: SOURCES_CONFIG_PATH
+        value: ../../config/sources.json
+      - key: SOURCE_FETCH_TIMEOUT_MS
+        value: "15000"
+      - key: MAX_ARTICLE_AGE_DAYS
+        value: "7"
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: DIGEST_EMAIL_FROM
+        sync: false
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: THE_GUARDIAN_API_KEY
+        sync: false
+    buildFilter:
+      paths:
+        - apps/worker/**
+        - packages/contracts/**
+        - packages/core/**
+        - packages/data/**
+        - config/**
+        - migrations/**
+        - package.json
+        - package-lock.json
+  - type: cron
+    name: sms-news-worker-deliver
+    runtime: node
+    plan: starter
+    schedule: "0 * * * *"
+    buildCommand: npm install && npm run build:worker
+    startCommand: npm run run:worker:deliver
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4.1-mini
+      - key: SUMMARY_PROMPT_VERSION
+        value: worker-v1
+      - key: SOURCES_CONFIG_PATH
+        value: ../../config/sources.json
+      - key: SOURCE_FETCH_TIMEOUT_MS
+        value: "15000"
+      - key: MAX_ARTICLE_AGE_DAYS
+        value: "7"
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: DIGEST_EMAIL_FROM
+        sync: false
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: THE_GUARDIAN_API_KEY
+        sync: false
+    buildFilter:
+      paths:
+        - apps/worker/**
+        - packages/contracts/**
+        - packages/core/**
+        - packages/data/**
+        - config/**
+        - migrations/**
+        - package.json
+        - package-lock.json

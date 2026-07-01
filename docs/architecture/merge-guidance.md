@@ -21,7 +21,6 @@ Use this guidance when multiple agents are working on the restructure in paralle
 
 - Move shared types to `packages/contracts`.
 - Move deterministic business logic to `packages/core`.
-- Move environment readers and typed config helpers to `packages/config`.
 - Move persistence interfaces and database implementations to `packages/data`.
 - Keep app entrypoints in `apps/*`.
 - Add tests near the behavior being moved and keep the narrowest relevant verification command.
@@ -32,11 +31,10 @@ Use this guidance when multiple agents are working on the restructure in paralle
 - Add API secrets only to `apps/api/.env.example`.
 - Add worker-only operational settings only to `apps/worker/.env.example`.
 - Keep source config paths API-owned until a task moves source fetching to the worker.
-- Keep examples email-first: `SEND_EMAIL=true`, `SEND_SMS=false`.
+- Keep examples email-first. Do not add new SMS-era runtime settings.
 
 ## Conflict Resolution
 
 - If two tasks edit the same implementation file, preserve the newer behavior and re-run the narrowest test covering it.
 - If docs disagree with code, code is the source of truth and docs should state whether behavior is implemented or intended.
-- If a package scaffold exists but exports no real behavior yet, call it a scaffold rather than documenting it as complete.
 - If a follow-up is needed, write it in the final report rather than making unowned implementation changes.
