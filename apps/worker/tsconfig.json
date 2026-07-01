@@ -7,9 +7,9 @@
     "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
     "baseUrl": ".",
     "paths": {
-      "@sms-news/contracts": ["../../packages/contracts/src/index.ts"],
-      "@sms-news/core": ["../../packages/core/src/index.ts"],
-      "@sms-news/data": ["../../packages/data/src/index.ts"]
+      "@sms-news/contracts": ["../../packages/contracts/dist/index.d.ts"],
+      "@sms-news/core": ["../../packages/core/dist/index.d.ts"],
+      "@sms-news/data": ["../../packages/data/dist/index.d.ts"]
     }
   },
   "include": ["src/**/*.ts"],
