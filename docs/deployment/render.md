@@ -7,7 +7,7 @@ This repo is ready to deploy to Render as four services:
 - one cron job for `worker:prepare`
 - one cron job for `worker:deliver`
 
-Use the included [render.yaml](/Users/andrewlay/smsNews/render.yaml) as the source of truth.
+Use the included [render.yaml](/Users/andrewlay/sipnews/render.yaml) as the source of truth.
 
 ## Important Constraint
 

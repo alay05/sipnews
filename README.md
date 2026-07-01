@@ -106,7 +106,7 @@ This is the active bucketed/shared-summary backend model.
 
 ## Render
 
-This repo includes a Render blueprint at [render.yaml](/Users/andrewlay/smsNews/render.yaml).
+This repo includes a Render blueprint at [render.yaml](/Users/andrewlay/sipnews/render.yaml).
 
 Deployment notes:
 
@@ -114,7 +114,7 @@ Deployment notes:
 - Render cron schedules are UTC, not timezone-aware
 - `worker:prepare` is configured for `0 9 * * *` in the blueprint, which is `4:00 AM` Eastern during standard time and drifts by one hour during daylight saving time
 
-See [docs/deployment/render.md](/Users/andrewlay/smsNews/docs/deployment/render.md) for the full account-by-account setup checklist.
+See [docs/deployment/render.md](/Users/andrewlay/sipnews/docs/deployment/render.md) for the full account-by-account setup checklist.
 
 ## Useful Commands
 
