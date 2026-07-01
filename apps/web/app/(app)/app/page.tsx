@@ -5,6 +5,7 @@ import { getOptionalAuthToken } from "@/lib/authToken";
 export default async function AppHomePage() {
   const api = createApiClient({ authToken: await getOptionalAuthToken() });
   const digests = await api.getDigestHistory();
+  const me = await api.getMe();
   const settings = await api.getSettings();
 
   return (
@@ -14,7 +15,7 @@ export default async function AppHomePage() {
           <p className="eyebrow">Dashboard</p>
           <h1>Digest workspace</h1>
           <p className="muted">
-            Review delivery readiness and jump into the next setup task.
+            Review delivery readiness, your current preferences, and the latest worker output.
           </p>
         </div>
         <div className="page-actions">
@@ -34,19 +35,22 @@ export default async function AppHomePage() {
         </div>
         <div className="stat panel">
           <span className="muted">Delivery hour</span>
-          <strong>{settings.deliveryHourLocal}:00</strong>
+          <strong>{settings.sendHour}:00</strong>
         </div>
         <div className="stat panel">
-          <span className="muted">Topics</span>
-          <strong>{settings.topics.length}</strong>
+          <span className="muted">Allocated stories</span>
+          <strong>
+            {Object.values(settings.categoryCounts).reduce((sum, count) => sum + count, 0)}
+          </strong>
         </div>
       </section>
 
       <section className="empty-state">
-        <h2>Backend integration placeholder</h2>
+        <h2>{me.onboardingComplete ? "Ready for the next worker run" : "Finish onboarding"}</h2>
         <p className="muted">
-          The web shell reads typed placeholder data until the Express API
-          exposes authenticated account, settings, and digest endpoints.
+          {me.onboardingComplete
+            ? "This account is configured through the same generalized user model future users will use."
+            : "Complete onboarding to make this account eligible for worker delivery."}
         </p>
       </section>
     </>

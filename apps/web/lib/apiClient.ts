@@ -1,28 +1,15 @@
 import "server-only";
 
-export type DigestStatus = "sent" | "queued" | "draft";
-
-export type DigestSummary = {
-  id: string;
-  title: string;
-  deliveredAt: string | null;
-  status: DigestStatus;
-  storyCount: number;
-};
-
-export type UserSettings = {
-  phoneNumber: string | null;
-  email: string | null;
-  deliveryHourLocal: number;
-  timezone: string;
-  topics: string[];
-};
-
-export type OnboardingSnapshot = {
-  hasCompletedOnboarding: boolean;
-  recommendedTopics: string[];
-  settings: UserSettings;
-};
+import type {
+  DigestDetailDto,
+  DigestListDto,
+  FeedbackRequestDto,
+  MeDto,
+  OnboardingPayload,
+  OnboardingStateDto,
+  UserSettingsDto,
+  UserSettingsPayload
+} from "@sms-news/contracts";
 
 type ApiClientOptions = {
   authToken?: string | null;
@@ -32,45 +19,24 @@ type ApiClientOptions = {
 const defaultBaseUrl =
   process.env.SMS_NEWS_API_URL ?? process.env.NEXT_PUBLIC_SMS_NEWS_API_URL;
 
-const placeholderSettings: UserSettings = {
-  phoneNumber: null,
-  email: null,
-  deliveryHourLocal: 8,
-  timezone: "America/New_York",
-  topics: ["Local news", "World", "Technology"]
-};
-
-const placeholderDigests: DigestSummary[] = [
-  {
-    id: "placeholder-2026-06-30",
-    title: "Morning brief placeholder",
-    deliveredAt: null,
-    status: "draft",
-    storyCount: 0
-  }
-];
-
 export function createApiClient(options: ApiClientOptions = {}) {
   const baseUrl = options.baseUrl ?? defaultBaseUrl;
 
-  async function request<T>(path: string): Promise<T | null> {
+  async function request<T>(path: string, init?: RequestInit): Promise<T> {
     if (!baseUrl) {
-      return null;
+      throw new Error("SMS News API base URL is not configured");
     }
 
     const response = await fetch(new URL(path, baseUrl), {
+      ...init,
       headers: {
         Accept: "application/json",
-        ...(options.authToken
-          ? { Authorization: `Bearer ${options.authToken}` }
-          : {})
+        ...(init?.body ? { "Content-Type": "application/json" } : {}),
+        ...(options.authToken ? { Authorization: `Bearer ${options.authToken}` } : {}),
+        ...init?.headers
       },
       cache: "no-store"
     });
-
-    if (response.status === 404 || response.status === 501) {
-      return null;
-    }
 
     if (!response.ok) {
       throw new Error(`SMS News API request failed: ${response.status}`);
@@ -80,22 +46,46 @@ export function createApiClient(options: ApiClientOptions = {}) {
   }
 
   return {
-    async getDigestHistory(): Promise<DigestSummary[]> {
-      return (await request<DigestSummary[]>("/digests")) ?? placeholderDigests;
+    getMe(): Promise<MeDto> {
+      return request<MeDto>("/v1/me");
     },
 
-    async getSettings(): Promise<UserSettings> {
-      return (await request<UserSettings>("/me/settings")) ?? placeholderSettings;
+    getOnboarding(): Promise<OnboardingStateDto> {
+      return request<OnboardingStateDto>("/v1/me/onboarding");
     },
 
-    async getOnboarding(): Promise<OnboardingSnapshot> {
-      return (
-        (await request<OnboardingSnapshot>("/me/onboarding")) ?? {
-          hasCompletedOnboarding: false,
-          recommendedTopics: placeholderSettings.topics,
-          settings: placeholderSettings
-        }
-      );
+    saveOnboarding(payload: OnboardingPayload): Promise<OnboardingStateDto> {
+      return request<OnboardingStateDto>("/v1/me/onboarding", {
+        method: "PUT",
+        body: JSON.stringify(payload)
+      });
+    },
+
+    getSettings(): Promise<UserSettingsDto> {
+      return request<UserSettingsDto>("/v1/me/settings");
+    },
+
+    saveSettings(payload: UserSettingsPayload): Promise<UserSettingsDto> {
+      return request<UserSettingsDto>("/v1/me/settings", {
+        method: "PUT",
+        body: JSON.stringify(payload)
+      });
+    },
+
+    async getDigestHistory() {
+      const response = await request<DigestListDto>("/v1/me/digests");
+      return response.digests;
+    },
+
+    getDigest(id: string): Promise<DigestDetailDto> {
+      return request<DigestDetailDto>(`/v1/me/digests/${encodeURIComponent(id)}`);
+    },
+
+    sendFeedback(payload: FeedbackRequestDto): Promise<{ ok: true; persisted: boolean }> {
+      return request<{ ok: true; persisted: boolean }>("/v1/me/feedback", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
     }
   };
 }

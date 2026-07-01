@@ -12,7 +12,7 @@ export default async function DigestHistoryPage() {
           <p className="eyebrow">History</p>
           <h1>Digest history</h1>
           <p className="muted">
-            Recent digest records will load from the Express API when available.
+            Recent worker-generated digests for this account.
           </p>
         </div>
       </header>
@@ -29,8 +29,10 @@ export default async function DigestHistoryPage() {
               </p>
             </div>
             <div>
-              <span className="status-pill">{digest.status}</span>
-              <p className="muted">{digest.storyCount} stories</p>
+              <span className="status-pill">
+                {digest.deliveredAt ? "Delivered" : "Pending"}
+              </span>
+              <p className="muted">{digest.itemCount} stories</p>
             </div>
           </li>
         ))}
