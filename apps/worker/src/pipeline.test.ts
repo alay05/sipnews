@@ -22,13 +22,13 @@ describe("BucketedWorkerPipeline", () => {
     await seedDueEmailUser(repositories, {
       id: "ai-user",
       email: "ai@example.com",
-      topicWeights: { ai_development: 4 },
+      categoryCounts: { world: 0, tech: 0, ai: 2, startups: 0 },
       digestMaxItems: 2
     });
     await seedDueEmailUser(repositories, {
       id: "tech-user",
       email: "tech@example.com",
-      topicWeights: { technology: 4 },
+      categoryCounts: { world: 0, tech: 2, ai: 0, startups: 0 },
       digestMaxItems: 2
     });
     await seedDueEmailUser(repositories, {
@@ -40,7 +40,7 @@ describe("BucketedWorkerPipeline", () => {
     const adapter = new FakeSourceAdapter({
       "ai-feed": [rawArticle("ai-feed", "AI Feed", "AI model release", ["ai"])],
       "tech-feed": [
-        rawArticle("tech-feed", "Tech Feed", "Chip platform update", ["technology"]),
+        rawArticle("tech-feed", "Tech Feed", "Chip platform update", ["tech"]),
         rawArticle("tech-feed", "Tech Feed", "Startup funding round", ["startup"])
       ],
       "world-feed": [rawArticle("world-feed", "World Feed", "World leaders meet", ["world"])]
@@ -52,7 +52,7 @@ describe("BucketedWorkerPipeline", () => {
       repositories,
       sources: [
         source("ai-feed", "AI Feed", ["ai"]),
-        source("tech-feed", "Tech Feed", ["technology"]),
+        source("tech-feed", "Tech Feed", ["tech"]),
         source("world-feed", "World Feed", ["world"])
       ],
       adapterForSource: () => adapter,
@@ -161,7 +161,7 @@ class FakeSummarizer implements ClusterSummarizer {
       title: `Summary for ${cluster.representative.title}`,
       summary: `${cluster.representative.title} summary with enough detail for a reusable canonical cluster summary.`,
       whyItMatters: "It changes the user's daily context.",
-      sourceLinks: cluster.articles.map((article) => ({
+      sourceLinks: cluster.articles.map((article: StoryCluster["articles"][number]) => ({
         sourceName: article.sourceName,
         url: article.canonicalUrl
       })),
@@ -184,9 +184,10 @@ async function seedDueEmailUser(
   input: {
     id: string;
     email: string;
-    topicWeights?: Record<string, number>;
+    categoryCounts?: { world: number; tech: number; ai: number; startups: number };
     digestMaxItems?: number;
     deliveryChannel?: string;
+    summaryLength?: "small" | "medium" | "large";
   }
 ): Promise<void> {
   await repositories.users.upsertUser({
@@ -201,9 +202,17 @@ async function seedDueEmailUser(
     timezone: "America/New_York",
     sendHour: 8,
     digestMaxItems: input.digestMaxItems ?? 3,
+    summaryLength: input.summaryLength ?? "medium",
     deliveryChannel: input.deliveryChannel ?? "email",
     deliveryAddress: input.email,
-    topicWeights: input.topicWeights ?? {},
+    categoryCounts:
+      input.categoryCounts ??
+      {
+        world: input.digestMaxItems ?? 3,
+        tech: 0,
+        ai: 0,
+        startups: 0
+      },
     sourceWeights: {},
     mutedSources: [],
     preferredBucketIds: [],

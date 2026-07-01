@@ -4,6 +4,7 @@ import { withTransaction } from "./db.js";
 import type {
   ArticleRecord,
   BucketDefinition,
+  PreparedDigestCluster,
   ClusterBucketMembership,
   ClusterSummary,
   ClusterSummaryVariant,
@@ -23,6 +24,7 @@ export interface UserRepository {
     provider: string,
     subject: string
   ): Promise<DataUser | undefined>;
+  findUserByEmail(email: string): Promise<DataUser | undefined>;
   listActiveUsers(): Promise<DataUser[]>;
   getDigestSettings(userId: string): Promise<UserDigestSettings | undefined>;
   upsertDigestSettings(settings: UserDigestSettings): Promise<void>;
@@ -39,6 +41,7 @@ export interface ContentRepository {
     summary: ClusterSummary,
     variants: ClusterSummaryVariant[]
   ): Promise<void>;
+  listPreparedClusters(): Promise<PreparedDigestCluster[]>;
   getLatestSummaryVariant(
     clusterId: string,
     variantType: string
@@ -120,6 +123,16 @@ export class PgUserRepository implements UserRepository {
     return result.rows[0] ? mapUser(result.rows[0]) : undefined;
   }
 
+  async findUserByEmail(email: string): Promise<DataUser | undefined> {
+    const result = await this.db.query(
+      `SELECT * FROM users
+       WHERE lower(email) = lower($1)
+       LIMIT 1`,
+      [email]
+    );
+    return result.rows[0] ? mapUser(result.rows[0]) : undefined;
+  }
+
   async listActiveUsers(): Promise<DataUser[]> {
     const result = await this.db.query(
       `SELECT * FROM users WHERE is_active = true ORDER BY created_at ASC`
@@ -140,17 +153,18 @@ export class PgUserRepository implements UserRepository {
   async upsertDigestSettings(settings: UserDigestSettings): Promise<void> {
     await this.db.query(
       `INSERT INTO user_digest_settings (
-        user_id, timezone, send_hour, digest_max_items, delivery_channel,
-        delivery_address, topic_weights, source_weights, muted_sources,
+        user_id, timezone, send_hour, digest_max_items, summary_length, delivery_channel,
+        delivery_address, category_counts, source_weights, muted_sources,
         preferred_bucket_ids, include_bucket_labels
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       ON CONFLICT (user_id) DO UPDATE SET
         timezone = EXCLUDED.timezone,
         send_hour = EXCLUDED.send_hour,
         digest_max_items = EXCLUDED.digest_max_items,
+        summary_length = EXCLUDED.summary_length,
         delivery_channel = EXCLUDED.delivery_channel,
         delivery_address = EXCLUDED.delivery_address,
-        topic_weights = EXCLUDED.topic_weights,
+        category_counts = EXCLUDED.category_counts,
         source_weights = EXCLUDED.source_weights,
         muted_sources = EXCLUDED.muted_sources,
         preferred_bucket_ids = EXCLUDED.preferred_bucket_ids,
@@ -161,9 +175,10 @@ export class PgUserRepository implements UserRepository {
         settings.timezone,
         settings.sendHour,
         settings.digestMaxItems,
+        settings.summaryLength,
         settings.deliveryChannel,
         settings.deliveryAddress ?? null,
-        JSON.stringify(settings.topicWeights),
+        JSON.stringify(settings.categoryCounts),
         JSON.stringify(settings.sourceWeights),
         settings.mutedSources,
         settings.preferredBucketIds,
@@ -405,6 +420,67 @@ export class PgContentRepository implements ContentRepository {
         );
       }
     });
+  }
+
+  async listPreparedClusters(): Promise<PreparedDigestCluster[]> {
+    const result = await this.db.query(
+      `SELECT
+         clusters.id AS cluster_id,
+         buckets.bucket_id,
+         clusters.title,
+         clusters.topics,
+         clusters.score,
+         variants.id AS variant_id,
+         variants.cluster_summary_id,
+         variants.variant_type,
+         variants.title AS variant_title,
+         variants.short_summary,
+         variants.why_it_matters,
+         variants.source_links,
+         variants.topics AS variant_topics,
+         variants.model,
+         variants.prompt_version,
+         variants.metadata
+       FROM story_clusters clusters
+       JOIN cluster_bucket_memberships buckets
+         ON buckets.cluster_id = clusters.id
+       JOIN cluster_summary_variants variants
+         ON variants.cluster_id = clusters.id
+       WHERE clusters.status = 'active'
+       ORDER BY clusters.score DESC, clusters.last_seen_at DESC, variants.created_at DESC`
+    );
+
+    const clusters = new Map<string, PreparedDigestCluster>();
+    for (const row of result.rows) {
+      const key = `${String(row.cluster_id)}:${String(row.bucket_id)}`;
+      const existing =
+        clusters.get(key) ??
+        {
+          clusterId: String(row.cluster_id),
+          bucketId: String(row.bucket_id),
+          title: String(row.title),
+          topics: stringArray(row.topics),
+          score: Number(row.score),
+          variants: []
+        };
+      existing.variants.push({
+        id: String(row.variant_id),
+        clusterSummaryId: String(row.cluster_summary_id),
+        clusterId: String(row.cluster_id),
+        variantType: String(row.variant_type),
+        title: String(row.variant_title),
+        shortSummary: String(row.short_summary),
+        whyItMatters: optionalString(row.why_it_matters),
+        sourceLinks: linkArray(row.source_links),
+        topics: stringArray(row.variant_topics),
+        model: optionalString(row.model),
+        promptVersion: optionalString(row.prompt_version),
+        metadata: objectValue(row.metadata)
+      });
+      clusters.set(key, existing);
+    }
+
+    return [...clusters.values()];
   }
 
   async getLatestSummaryVariant(
@@ -680,9 +756,13 @@ function mapDigestSettings(row: Record<string, unknown>): UserDigestSettings {
     timezone: String(row.timezone),
     sendHour: Number(row.send_hour),
     digestMaxItems: Number(row.digest_max_items),
+    summaryLength:
+      row.summary_length === "small" || row.summary_length === "large"
+        ? row.summary_length
+        : "medium",
     deliveryChannel: String(row.delivery_channel),
     deliveryAddress: optionalString(row.delivery_address),
-    topicWeights: mapNumberRecord(row.topic_weights),
+    categoryCounts: mapCategoryCounts(row.category_counts),
     sourceWeights: mapNumberRecord(row.source_weights),
     mutedSources: stringArray(row.muted_sources),
     preferredBucketIds: stringArray(row.preferred_bucket_ids),
@@ -761,6 +841,16 @@ function mapNumberRecord(value: unknown): Record<string, number> {
   return Object.fromEntries(
     Object.entries(object).map(([key, recordValue]) => [key, Number(recordValue)])
   );
+}
+
+function mapCategoryCounts(value: unknown): UserDigestSettings["categoryCounts"] {
+  const counts = mapNumberRecord(value);
+  return {
+    world: counts.world ?? 0,
+    tech: counts.tech ?? 0,
+    ai: counts.ai ?? 0,
+    startups: counts.startups ?? 0
+  };
 }
 
 function linkArray(value: unknown): Array<{ sourceName: string; url: string }> {

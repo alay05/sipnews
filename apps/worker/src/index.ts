@@ -13,8 +13,6 @@ import {
 
 export async function main(): Promise<void> {
   const env = loadWorkerEnv();
-  if (!env.databaseUrl) throw new Error("DATABASE_URL is required for the worker");
-  if (!env.emailFrom) throw new Error("DIGEST_EMAIL_FROM is required for email delivery");
 
   const pool = createDataPool(env.databaseUrl);
   try {
@@ -39,25 +37,40 @@ export async function main(): Promise<void> {
       publicBaseUrl: env.publicBaseUrl,
       sourceFetchTimeoutMs: env.sourceFetchTimeoutMs,
       maxArticleAgeDays: env.maxArticleAgeDays,
-      summaryModel: env.openAiApiKey ? env.openAiModel : "heuristic",
+      summaryModel: env.openAiModel,
       summaryPromptVersion: env.summaryPromptVersion
     });
 
-    const result = await pipeline.run();
+    const mode = workerMode(process.argv[2]);
+    const result =
+      mode === "prepare"
+        ? await pipeline.prepare()
+        : mode === "deliver"
+          ? await pipeline.deliver()
+          : await pipeline.run();
     console.log(
       JSON.stringify({
         event: "worker_complete",
+        mode,
         ingestionRunId: result.ingestionRunId,
         articlesSeen: result.articlesSeen,
         articlesSaved: result.articlesSaved,
         clustersTouched: result.clustersTouched,
-        dueUsers: result.dueUsers,
-        digests: result.digests.length
+        dueUsers: "dueUsers" in result ? result.dueUsers : 0,
+        digests:
+          "digests" in result
+            ? (result as { digests: Array<unknown> }).digests.length
+            : 0
       })
     );
   } finally {
     await pool.end();
   }
+}
+
+function workerMode(value: string | undefined): "run" | "prepare" | "deliver" {
+  if (value === "prepare" || value === "deliver") return value;
+  return "run";
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

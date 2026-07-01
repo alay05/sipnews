@@ -2,25 +2,6 @@ import OpenAI from "openai";
 import type { StoryCluster } from "@sms-news/core";
 import type { ClusterSummaryDraft, ClusterSummarizer } from "./types.js";
 
-export class HeuristicClusterSummarizer implements ClusterSummarizer {
-  async summarize(cluster: StoryCluster): Promise<ClusterSummaryDraft> {
-    const article = cluster.representative;
-    return {
-      title: article.title,
-      summary:
-        article.excerpt ??
-        article.body ??
-        "Open the linked source for details. This local summary is used until OpenAI is configured.",
-      whyItMatters:
-        cluster.articles.length > 1
-          ? `Covered by ${cluster.articles.length} configured sources.`
-          : undefined,
-      sourceLinks: sourceLinksForCluster(cluster),
-      topics: cluster.topics
-    };
-  }
-}
-
 export class OpenAIClusterSummarizer implements ClusterSummarizer {
   private readonly client: OpenAI;
 
@@ -42,7 +23,7 @@ export class OpenAIClusterSummarizer implements ClusterSummarizer {
           content: JSON.stringify({
             clusterId: cluster.id,
             topics: cluster.topics,
-            articles: cluster.articles.map((article) => ({
+            articles: cluster.articles.map((article: StoryCluster["articles"][number]) => ({
               title: article.title,
               sourceName: article.sourceName,
               url: article.canonicalUrl,
@@ -95,15 +76,14 @@ export class OpenAIClusterSummarizer implements ClusterSummarizer {
 }
 
 export function createClusterSummarizer(options: {
-  openAiApiKey?: string;
+  openAiApiKey: string;
   openAiModel: string;
 }): ClusterSummarizer {
-  if (!options.openAiApiKey) return new HeuristicClusterSummarizer();
   return new OpenAIClusterSummarizer(options.openAiApiKey, options.openAiModel);
 }
 
 function sourceLinksForCluster(cluster: StoryCluster): Array<{ sourceName: string; url: string }> {
-  return cluster.articles.map((article) => ({
+  return cluster.articles.map((article: StoryCluster["articles"][number]) => ({
     sourceName: article.sourceName,
     url: article.canonicalUrl
   }));

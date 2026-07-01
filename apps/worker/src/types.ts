@@ -33,7 +33,7 @@ export interface EmailClient {
   sendEmail(message: EmailMessage): Promise<{ providerMessageId?: string } | void>;
 }
 
-export type SummaryVariantType = "short" | "medium" | "long";
+export type SummaryVariantType = "small" | "medium" | "large";
 
 export interface PreparedClusterSummary {
   summary: ClusterSummary;

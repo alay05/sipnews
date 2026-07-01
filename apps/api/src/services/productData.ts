@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 import {
   createDataPool,
-  createInMemoryRepositories,
   createPgRepositories,
   formatPgDate,
   type DataRepositories,
@@ -22,26 +21,11 @@ export interface ProductDataAccess {
 }
 
 export function createProductDataAccess(env: AppEnv): ProductDataAccess {
-  if (!env.DATABASE_URL) return createInMemoryProductDataAccess();
-
   const db = createDataPool(env.DATABASE_URL);
   return {
     repositories: createPgRepositories(db),
     listDigestsForUser: (userId) => listDigestsForUser(db, userId),
     saveFeedback: (input) => saveFeedback(db, input)
-  };
-}
-
-export function createInMemoryProductDataAccess(): ProductDataAccess {
-  const repositories = createInMemoryRepositories();
-  return {
-    repositories,
-    async listDigestsForUser() {
-      return [];
-    },
-    async saveFeedback() {
-      return false;
-    }
   };
 }
 
@@ -60,7 +44,7 @@ async function listDigestsForUser(
   const digests = await Promise.all(
     result.rows.map((row) => repositoriesFor(db).digests.getDigest(String(row.id)))
   );
-  return digests.filter((digest): digest is DigestRecord => Boolean(digest));
+  return digests.filter((digest: DigestRecord | undefined): digest is DigestRecord => Boolean(digest));
 }
 
 async function saveFeedback(

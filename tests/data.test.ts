@@ -34,7 +34,8 @@ describe("data repositories", () => {
     ).resolves.toMatchObject({
       timezone: "America/Los_Angeles",
       sendHour: 8,
-      deliveryChannel: "email"
+      deliveryChannel: "email",
+      categoryCounts: { world: 5, tech: 0, ai: 0, startups: 0 }
     });
   });
 
@@ -74,7 +75,7 @@ describe("data repositories", () => {
       id: "variant-1",
       clusterSummaryId: summary.id,
       clusterId: summary.clusterId,
-      variantType: "digest",
+      variantType: "medium",
       title: "Digest title",
       shortSummary: "Short summary",
       sourceLinks: [],
@@ -90,7 +91,7 @@ describe("data repositories", () => {
       repositories.content.listClusterIdsForBucket("world")
     ).resolves.toEqual(["cluster-1"]);
     await expect(
-      repositories.content.getLatestSummaryVariant("cluster-1", "digest")
+      repositories.content.getLatestSummaryVariant("cluster-1", "medium")
     ).resolves.toMatchObject({ id: "variant-1", shortSummary: "Short summary" });
   });
 

@@ -27,7 +27,9 @@ export class SendGridEmailClient implements EmailClient {
 }
 
 export function createEmailClient(options: { apiKey?: string }): EmailClient {
-  if (!options.apiKey) return new ConsoleEmailClient();
+  if (!options.apiKey) {
+    throw new Error("SENDGRID_API_KEY is required for worker email delivery");
+  }
   return new SendGridEmailClient(options.apiKey);
 }
 

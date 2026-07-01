@@ -1,7 +1,7 @@
 import type { StoryCluster, UserPreferences } from "./types.js";
 import { normalizeTopic } from "./normalize.js";
 
-export type DigestCategory = "general" | "technology" | "ai_development" | "startups";
+export type DigestCategory = "world" | "tech" | "ai" | "startups";
 
 export interface CategoryBalancedSelectionOptions {
   maxItems: number;
@@ -9,23 +9,23 @@ export interface CategoryBalancedSelectionOptions {
 }
 
 export const DIGEST_CATEGORIES: readonly DigestCategory[] = [
-  "general",
-  "technology",
-  "ai_development",
+  "world",
+  "tech",
+  "ai",
   "startups"
 ];
 
 export const DEFAULT_CATEGORY_RATIOS: Record<DigestCategory, number> = {
-  general: 0.2,
-  technology: 0.3,
-  ai_development: 0.3,
+  world: 0.2,
+  tech: 0.3,
+  ai: 0.3,
   startups: 0.2
 };
 
 const CATEGORY_MATCHERS: Record<DigestCategory, RegExp[]> = {
-  general: [/\bgeneral\b/, /\bworld\b/, /\bus\b/, /\bu\.s\.\b/, /\bunited states\b/],
-  technology: [/\btech\b/, /\btechnology\b/, /\btech industry\b/],
-  ai_development: [
+  world: [/\bgeneral\b/, /\bworld\b/, /\bus\b/, /\bu\.s\.\b/, /\bunited states\b/],
+  tech: [/\btech\b/, /\btechnology\b/, /\btech industry\b/],
+  ai: [
     /\bai\b/,
     /\bllm\b/,
     /\bopenai\b/,
@@ -128,19 +128,15 @@ export function inferDigestCategory(cluster: Pick<StoryCluster, "topics">): Dige
     }
   }
 
-  return "general";
+  return "world";
 }
 
 export function normalizeDigestCategory(value: string): DigestCategory | undefined {
   const normalized = normalizeTopic(value).replace(/[-\s]+/g, "_");
-  if (normalized === "tech" || normalized === "technology") return "technology";
-  if (normalized === "ai" || normalized === "ai_dev" || normalized === "ai_development") {
-    return "ai_development";
-  }
+  if (normalized === "tech" || normalized === "technology") return "tech";
+  if (normalized === "ai" || normalized === "ai_dev" || normalized === "ai_development") return "ai";
   if (normalized === "startup" || normalized === "startups") return "startups";
-  if (normalized === "general" || normalized === "world" || normalized === "us") {
-    return "general";
-  }
+  if (normalized === "general" || normalized === "world" || normalized === "us") return "world";
   return undefined;
 }
 
@@ -235,12 +231,12 @@ function isMuted(cluster: StoryCluster, preferences: UserPreferences): boolean {
 
 function getSelectionOrder(date = new Date()): DigestCategory[] {
   return isTechnologyExtraDay(date)
-    ? ["general", "technology", "ai_development", "startups"]
-    : ["general", "ai_development", "technology", "startups"];
+    ? ["world", "tech", "ai", "startups"]
+    : ["world", "ai", "tech", "startups"];
 }
 
 function getMatcherPriority(): DigestCategory[] {
-  return ["startups", "ai_development", "technology", "general"];
+  return ["startups", "ai", "tech", "world"];
 }
 
 function isTechnologyExtraDay(date: Date): boolean {

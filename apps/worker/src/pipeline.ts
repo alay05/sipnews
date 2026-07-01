@@ -2,18 +2,15 @@ import { randomUUID } from "node:crypto";
 import {
   dedupeArticles,
   deriveBucketMembership,
-  deriveBucketPools,
   filterRecentArticles,
   generateSummaryCacheKey,
   normalizeArticle,
   rankClusters,
-  selectClustersForUserFromBuckets,
   type Article,
   type DigestCategory,
   type RawArticle,
   type SourceConfig,
-  type StoryCluster,
-  type UserPreferences
+  type StoryCluster
 } from "@sms-news/core";
 import type {
   ArticleRecord,
@@ -23,12 +20,14 @@ import type {
   DataRepositories,
   DataUser,
   DigestRecord,
+  PreparedDigestCluster,
   SourceRecord,
   StoryClusterRecord,
   UserDigestSettings
 } from "@sms-news/data";
 import { buildDigestEmail } from "./email.js";
 import type {
+  ClusterSummaryDraft,
   ClusterSummarizer,
   EmailClient,
   PreparedClusterSummary,
@@ -44,20 +43,20 @@ const DEFAULT_BUCKETS: Array<{
   sortOrder: number;
 }> = [
   {
-    id: "general",
-    name: "General",
-    description: "General world and US news",
+    id: "world",
+    name: "World",
+    description: "World and US news",
     sortOrder: 10
   },
   {
-    id: "technology",
-    name: "Technology",
+    id: "tech",
+    name: "Tech",
     description: "Technology industry news",
     sortOrder: 20
   },
   {
-    id: "ai_development",
-    name: "AI Development",
+    id: "ai",
+    name: "AI",
     description: "AI, developer tools, and software news",
     sortOrder: 30
   },
@@ -69,7 +68,7 @@ const DEFAULT_BUCKETS: Array<{
   }
 ];
 
-const SUMMARY_VARIANTS: SummaryVariantType[] = ["short", "medium", "long"];
+const SUMMARY_VARIANTS: SummaryVariantType[] = ["small", "medium", "large"];
 
 export interface BucketedWorkerPipelineOptions {
   repositories: DataRepositories;
@@ -86,17 +85,28 @@ export interface BucketedWorkerPipelineOptions {
   summaryPromptVersion?: string;
 }
 
+export interface WorkerPrepareResult {
+  ingestionRunId: string;
+  articlesSeen: number;
+  articlesSaved: number;
+  clustersTouched: number;
+}
+
 export class BucketedWorkerPipeline {
   constructor(private readonly options: BucketedWorkerPipelineOptions) {}
 
   async run(): Promise<WorkerRunResult> {
-    const now = this.options.now ?? new Date();
+    const prepared = await this.prepare();
+    return this.deliver(prepared);
+  }
+
+  async prepare(now = this.options.now ?? new Date()): Promise<WorkerPrepareResult> {
     const ingestionRunId = randomUUID();
     await this.options.repositories.runs.startIngestionRun({
       id: ingestionRunId,
       status: "running",
       startedAt: now,
-      metadata: { sourceCount: this.options.sources.length }
+      metadata: { sourceCount: this.options.sources.length, mode: "prepare" }
     });
 
     try {
@@ -108,34 +118,7 @@ export class BucketedWorkerPipeline {
       const clusters = rankClusters(dedupeArticles(articles), emptyPreferences(), now);
       await this.persistClustersAndBuckets(clusters, now);
       const summaries = await this.prepareSummaries(clusters);
-      const dueUsers = await this.findUsersDueForDelivery(now);
-      const digests: DigestRecord[] = [];
-
-      const pools = deriveBucketPools(clusters);
-      for (const { user, settings, localDate } of dueUsers) {
-        const existing = await this.options.repositories.digests.getDigestForUserDate(
-          user.id,
-          localDate
-        );
-        if (existing?.status === "delivered") continue;
-
-        const selected = selectClustersForUserFromBuckets(
-          pools,
-          userPreferences(settings),
-          {
-            totalItemCount: settings.digestMaxItems,
-            now,
-            date: now
-          }
-        );
-        const digest = existing ?? this.assembleDigest(user, settings, localDate, now, selected, summaries);
-        if (!existing) {
-          await this.options.repositories.digests.saveDigest(digest);
-        }
-
-        await this.deliverDigest(digest, user, settings, now);
-        digests.push({ ...digest, status: "delivered", deliveredAt: now });
-      }
+      const _preparedClusters = summaries.size;
 
       await this.options.repositories.runs.finishIngestionRun(ingestionRunId, {
         status: "succeeded",
@@ -143,16 +126,14 @@ export class BucketedWorkerPipeline {
         articlesSeen: rawArticles.length,
         articlesSaved: articles.length,
         clustersTouched: clusters.length,
-        metadata: { dueUsers: dueUsers.length, digests: digests.length }
+        metadata: { preparedClusters: summaries.size, mode: "prepare" }
       });
 
       return {
         ingestionRunId,
         articlesSeen: rawArticles.length,
         articlesSaved: articles.length,
-        clustersTouched: clusters.length,
-        dueUsers: dueUsers.length,
-        digests
+        clustersTouched: clusters.length
       };
     } catch (error) {
       await this.options.repositories.runs.finishIngestionRun(ingestionRunId, {
@@ -163,6 +144,94 @@ export class BucketedWorkerPipeline {
         clustersTouched: 0,
         errorMessage: error instanceof Error ? error.message : String(error)
       });
+      throw error;
+    }
+  }
+
+  async deliver(
+    prepared: WorkerPrepareResult | undefined = undefined,
+    now = this.options.now ?? new Date()
+  ): Promise<WorkerRunResult> {
+    const ingestionRunId = prepared?.ingestionRunId ?? randomUUID();
+    if (!prepared) {
+      await this.options.repositories.runs.startIngestionRun({
+        id: ingestionRunId,
+        status: "running",
+        startedAt: now,
+        metadata: { mode: "deliver" }
+      });
+    }
+
+    try {
+      const dueUsers = await this.findUsersDueForDelivery(now);
+      const preparedClusters = await this.options.repositories.content.listPreparedClusters();
+      const digests: DigestRecord[] = [];
+
+      for (const { user, settings, localDate } of dueUsers) {
+        const existing = await this.options.repositories.digests.getDigestForUserDate(
+          user.id,
+          localDate
+        );
+        if (existing?.status === "delivered") continue;
+
+        const selection = selectPreparedClustersForUser(preparedClusters, settings);
+        if (selection.items.length === 0) {
+          await this.skipDeliveryForNoContent(user, settings, now, selection);
+          continue;
+        }
+
+        if (selection.missingCategories.length > 0) {
+          console.warn(
+            JSON.stringify({
+              event: "partial_digest_content",
+              userId: user.id,
+              missingCategories: selection.missingCategories
+            })
+          );
+        }
+
+        const digest =
+          existing ??
+          this.assembleDigest(user, localDate, now, selection.items);
+        if (!existing) {
+          await this.options.repositories.digests.saveDigest(digest);
+        }
+
+        await this.deliverDigest(digest, user, settings, now, selection.missingCategories);
+        digests.push({ ...digest, status: "delivered", deliveredAt: now });
+      }
+
+      if (!prepared) {
+        await this.options.repositories.runs.finishIngestionRun(ingestionRunId, {
+          status: "succeeded",
+          finishedAt: now,
+          articlesSeen: 0,
+          articlesSaved: 0,
+          clustersTouched: preparedClusters.length,
+          metadata: { dueUsers: dueUsers.length, digests: digests.length, mode: "deliver" }
+        });
+      }
+
+      return {
+        ingestionRunId,
+        articlesSeen: prepared?.articlesSeen ?? 0,
+        articlesSaved: prepared?.articlesSaved ?? 0,
+        clustersTouched: prepared?.clustersTouched ?? preparedClusters.length,
+        dueUsers: dueUsers.length,
+        digests
+      };
+    } catch (error) {
+      if (!prepared) {
+        await this.options.repositories.runs.finishIngestionRun(ingestionRunId, {
+          status: "failed",
+          finishedAt: now,
+          articlesSeen: 0,
+          articlesSaved: 0,
+          clustersTouched: 0,
+          errorMessage: error instanceof Error ? error.message : String(error),
+          metadata: { mode: "deliver" }
+        });
+      }
       throw error;
     }
   }
@@ -232,17 +301,17 @@ export class BucketedWorkerPipeline {
       const missing = SUMMARY_VARIANTS.filter((variant) => !existing[variant]);
       if (missing.length === 0) {
         prepared.set(cluster.id, {
-          summary: summaryFromVariant(existing.long ?? existing.medium ?? existing.short),
+          summary: summaryFromVariant(existing.large ?? existing.medium ?? existing.small),
           variants: existing as Record<SummaryVariantType, ClusterSummaryVariant>
         });
         continue;
       }
 
-      const draft = await this.options.summarizer.summarize(cluster);
+      const draft = await summarizeClusterWithRetry(this.options.summarizer, cluster);
       const summaryId =
-        existing.short?.clusterSummaryId ??
+        existing.small?.clusterSummaryId ??
         existing.medium?.clusterSummaryId ??
-        existing.long?.clusterSummaryId ??
+        existing.large?.clusterSummaryId ??
         summaryIdForCluster(cluster.id, this.summaryModel(), this.summaryPromptVersion());
       const summary: ClusterSummary = {
         id: summaryId,
@@ -312,35 +381,24 @@ export class BucketedWorkerPipeline {
 
   private assembleDigest(
     user: DataUser,
-    settings: UserDigestSettings,
     localDate: string,
     now: Date,
-    selected: StoryCluster[],
-    summaries: Map<string, PreparedClusterSummary>
+    selected: PreparedSelectedCluster[]
   ): DigestRecord {
     const digestId = randomUUID();
-    const variantType = preferredVariantType(settings);
-    const items = selected.flatMap((cluster, index) => {
-      const prepared = summaries.get(cluster.id);
-      if (!prepared) return [];
-      const variant = prepared.variants[variantType];
-      const membership = deriveBucketMembership(cluster);
-      return [
-        {
-          id: randomUUID(),
-          digestId,
-          clusterId: cluster.id,
-          summaryVariantId: variant.id,
-          bucketId: membership.bucket,
-          itemIndex: index,
-          titleSnapshot: variant.title,
-          summarySnapshot: variant.shortSummary,
-          whyItMattersSnapshot: variant.whyItMatters,
-          sourceLinksSnapshot: variant.sourceLinks,
-          topicsSnapshot: variant.topics
-        }
-      ];
-    });
+    const items = selected.map((cluster, index) => ({
+      id: randomUUID(),
+      digestId,
+      clusterId: cluster.clusterId,
+      summaryVariantId: cluster.variant.id,
+      bucketId: cluster.bucketId,
+      itemIndex: index,
+      titleSnapshot: cluster.variant.title,
+      summarySnapshot: cluster.variant.shortSummary,
+      whyItMattersSnapshot: cluster.variant.whyItMatters,
+      sourceLinksSnapshot: cluster.variant.sourceLinks,
+      topicsSnapshot: cluster.variant.topics
+    }));
 
     return {
       id: digestId,
@@ -358,7 +416,8 @@ export class BucketedWorkerPipeline {
     digest: DigestRecord,
     user: DataUser,
     settings: UserDigestSettings,
-    now: Date
+    now: Date,
+    missingCategories: DigestCategory[]
   ): Promise<void> {
     const destination = deliveryAddress(user, settings);
     if (!destination) return;
@@ -372,7 +431,7 @@ export class BucketedWorkerPipeline {
       status: "running",
       destination,
       queuedAt: now,
-      metadata: { itemCount: digest.items.length }
+      metadata: { itemCount: digest.items.length, missingCategories }
     });
 
     try {
@@ -391,7 +450,8 @@ export class BucketedWorkerPipeline {
         status: "succeeded",
         providerMessageId: result?.providerMessageId,
         sentAt: now,
-        finishedAt: now
+        finishedAt: now,
+        metadata: { itemCount: digest.items.length, missingCategories }
       });
     } catch (error) {
       await this.options.repositories.runs.finishDeliveryRun(deliveryRunId, {
@@ -401,6 +461,37 @@ export class BucketedWorkerPipeline {
       });
       throw error;
     }
+  }
+
+  private async skipDeliveryForNoContent(
+    user: DataUser,
+    settings: UserDigestSettings,
+    now: Date,
+    selection: PreparedSelectionResult
+  ): Promise<void> {
+    const destination = deliveryAddress(user, settings);
+    const deliveryRunId = randomUUID();
+    await this.options.repositories.runs.createDeliveryRun({
+      id: deliveryRunId,
+      userId: user.id,
+      channel: "email",
+      status: "queued",
+      destination,
+      queuedAt: now,
+      metadata: { reason: "no_content", missingCategories: selection.missingCategories }
+    });
+    await this.options.repositories.runs.finishDeliveryRun(deliveryRunId, {
+      status: "skipped_no_content",
+      finishedAt: now,
+      metadata: { reason: "no_content", missingCategories: selection.missingCategories }
+    });
+    console.warn(
+      JSON.stringify({
+        event: "digest_skipped_no_content",
+        userId: user.id,
+        missingCategories: selection.missingCategories
+      })
+    );
   }
 
   private summaryModel(): string {
@@ -492,7 +583,7 @@ function clusterRecord(cluster: StoryCluster, now: Date): StoryClusterRecord {
     status: "active",
     firstSeenAt: now,
     lastSeenAt: now,
-    articleIds: cluster.articles.map((article) => article.id),
+    articleIds: cluster.articles.map((article: Article) => article.id),
     metadata: { articleCount: cluster.articles.length }
   };
 }
@@ -511,9 +602,9 @@ function bucketDefinition(bucket: (typeof DEFAULT_BUCKETS)[number]): BucketDefin
 function summaryIdForCluster(clusterId: string, model: string, promptVersion: string): string {
   return `canonical_${generateSummaryCacheKey({
     clusterId,
-    length: "long",
+    summaryLength: "large",
     model,
-    promptVersion
+    version: promptVersion
   }).slice("summary_".length)}`;
 }
 
@@ -525,9 +616,9 @@ function summaryVariant(
   return {
     id: generateSummaryCacheKey({
       clusterId: summary.clusterId,
-      length: variantType,
+      summaryLength: variantType,
       model: summary.model ?? "heuristic",
-      promptVersion: summary.promptVersion ?? "worker-v1"
+      version: summary.promptVersion ?? "worker-v1"
     }),
     clusterSummaryId: summary.id,
     clusterId: summary.clusterId,
@@ -545,9 +636,9 @@ function summaryVariant(
 
 function variantText(summary: string, variantType: SummaryVariantType): string {
   const limits: Record<SummaryVariantType, number> = {
-    short: 220,
+    small: 220,
     medium: 600,
-    long: 1200
+    large: 1200
   };
   return truncate(summary, limits[variantType]);
 }
@@ -574,7 +665,7 @@ function summaryFromVariant(variant: ClusterSummaryVariant | undefined): Cluster
   };
 }
 
-function emptyPreferences(): UserPreferences {
+function emptyPreferences() {
   return {
     topicWeights: {},
     sourceWeights: {},
@@ -582,18 +673,90 @@ function emptyPreferences(): UserPreferences {
   };
 }
 
-function userPreferences(settings: UserDigestSettings): UserPreferences {
-  return {
-    topicWeights: settings.topicWeights,
-    sourceWeights: settings.sourceWeights,
-    mutedSources: settings.mutedSources
-  };
-}
-
 function deliveryAddress(user: DataUser, settings: UserDigestSettings): string | undefined {
   return settings.deliveryAddress ?? user.email;
 }
 
-function preferredVariantType(_settings: UserDigestSettings): SummaryVariantType {
-  return "medium";
+interface PreparedSelectedCluster {
+  clusterId: string;
+  bucketId: DigestCategory;
+  variant: ClusterSummaryVariant;
+}
+
+interface PreparedSelectionResult {
+  items: PreparedSelectedCluster[];
+  missingCategories: DigestCategory[];
+}
+
+function selectPreparedClustersForUser(
+  preparedClusters: PreparedDigestCluster[],
+  settings: UserDigestSettings
+): PreparedSelectionResult {
+  const variantType = settings.summaryLength;
+  const pools: Record<DigestCategory, PreparedDigestCluster[]> = {
+    world: [],
+    tech: [],
+    ai: [],
+    startups: []
+  };
+
+  for (const cluster of preparedClusters) {
+    if (cluster.bucketId in pools) {
+      pools[cluster.bucketId as DigestCategory].push(cluster);
+    }
+  }
+
+  const selected: PreparedSelectedCluster[] = [];
+  const selectedIds = new Set<string>();
+  const missingCategories: DigestCategory[] = [];
+
+  for (const category of ["world", "tech", "ai", "startups"] as const) {
+    const required = settings.categoryCounts[category];
+    if (required <= 0) continue;
+    const bucket = pools[category]
+      .filter((cluster) => !selectedIds.has(cluster.clusterId))
+      .sort((left, right) => right.score - left.score);
+    let added = 0;
+
+    for (const cluster of bucket) {
+      const variant = cluster.variants.find(
+        (candidate) => candidate.variantType === variantType
+      );
+      if (!variant) continue;
+      selected.push({
+        clusterId: cluster.clusterId,
+        bucketId: category,
+        variant
+      });
+      selectedIds.add(cluster.clusterId);
+      added += 1;
+      if (added >= required) break;
+    }
+
+    if (added < required) {
+      missingCategories.push(category);
+    }
+  }
+
+  return { items: selected, missingCategories };
+}
+
+async function summarizeClusterWithRetry(
+  summarizer: ClusterSummarizer,
+  cluster: StoryCluster,
+  retries = 2
+): Promise<ClusterSummaryDraft> {
+  let attempt = 0;
+  let lastError: unknown;
+  while (attempt <= retries) {
+    try {
+      return await summarizer.summarize(cluster);
+    } catch (error) {
+      lastError = error;
+      attempt += 1;
+      if (attempt > retries) break;
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("Summary generation failed");
 }

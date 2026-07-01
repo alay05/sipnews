@@ -25,6 +25,8 @@ export function createSourceAdapter(source: SourceConfig): SourceAdapter {
     case "openai_web_search":
       return new OptionalAdapter(source.type);
   }
+
+  throw new Error(`Unsupported source adapter type: ${String(source.type)}`);
 }
 
 export class RssAdapter implements SourceAdapter {

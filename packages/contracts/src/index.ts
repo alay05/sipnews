@@ -18,6 +18,7 @@ const categoryAliases: Record<string, TopicCategory> = {
   "tech industry": "tech",
   ai: "ai",
   "ai-dev": "ai",
+  "ai development": "ai",
   llm: "ai",
   openai: "ai",
   programming: "ai",
@@ -32,34 +33,91 @@ const categoryAliases: Record<string, TopicCategory> = {
 
 export function normalizeTopicCategory(value: string): TopicCategory {
   const key = value.toLowerCase().replace(/[_/]+/g, " ").replace(/\s+/g, " ").trim();
-  const category = categoryAliases[key] ?? key;
-  return topicCategorySchema.parse(category);
+  return topicCategorySchema.parse(categoryAliases[key] ?? key);
 }
 
-export const summaryLengthSchema = z.enum(["short", "standard", "long"]);
+export const summaryLengthSchema = z.enum(["small", "medium", "large"]);
 export type SummaryLength = z.infer<typeof summaryLengthSchema>;
 
-export const onboardingPayloadSchema = z.object({
-  phoneNumber: z.string().min(1),
-  displayName: z.string().min(1).optional(),
+export const summaryLengths = summaryLengthSchema.options;
+
+export const categoryCountMapSchema = z.object({
+  world: z.number().int().min(0),
+  tech: z.number().int().min(0),
+  ai: z.number().int().min(0),
+  startups: z.number().int().min(0)
+});
+export type CategoryCountMap = z.infer<typeof categoryCountMapSchema>;
+
+const digestPreferencesBaseSchema = z.object({
   timezone: z.string().min(1),
   sendHour: z.number().int().min(0).max(23),
-  digestMaxItems: z.number().int().positive(),
-  categories: z.array(topicCategorySchema).default([...topicCategories]),
-  summaryLength: summaryLengthSchema.default("standard")
+  digestMaxItems: z.number().int().min(1).max(25),
+  categoryCounts: categoryCountMapSchema,
+  summaryLength: summaryLengthSchema
 });
+
+function refineDigestPreferences(
+  value: DigestPreferencesLike,
+  ctx: z.RefinementCtx
+) {
+  const total = Object.values(value.categoryCounts).reduce((sum, count) => sum + count, 0);
+  if (total !== value.digestMaxItems) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["categoryCounts"],
+      message: "Category counts must add up to digestMaxItems"
+    });
+  }
+
+  if (total <= 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["categoryCounts"],
+      message: "At least one category must have a positive count"
+    });
+  }
+}
+
+type DigestPreferencesLike = z.infer<typeof digestPreferencesBaseSchema>;
+
+export const digestPreferencesSchema = digestPreferencesBaseSchema.superRefine(refineDigestPreferences);
+export type DigestPreferences = z.infer<typeof digestPreferencesSchema>;
+
+export const onboardingPayloadSchema = digestPreferencesBaseSchema.extend({
+  displayName: z.string().min(1).optional()
+}).superRefine(refineDigestPreferences);
 export type OnboardingPayload = z.infer<typeof onboardingPayloadSchema>;
 
-export const userSettingsPayloadSchema = z.object({
+const userSettingsPayloadBaseSchema = digestPreferencesBaseSchema.extend({
   displayName: z.string().min(1).optional(),
-  timezone: z.string().min(1).optional(),
-  sendHour: z.number().int().min(0).max(23).optional(),
-  digestMaxItems: z.number().int().positive().optional(),
-  categories: z.array(topicCategorySchema).optional(),
-  summaryLength: summaryLengthSchema.optional(),
   isActive: z.boolean().optional()
 });
+
+export const userSettingsPayloadSchema = userSettingsPayloadBaseSchema.superRefine(
+  refineDigestPreferences
+);
 export type UserSettingsPayload = z.infer<typeof userSettingsPayloadSchema>;
+
+export const meDtoSchema = z.object({
+  id: z.string(),
+  email: z.string().email().optional(),
+  displayName: z.string().optional(),
+  isActive: z.boolean(),
+  onboardingComplete: z.boolean()
+});
+export type MeDto = z.infer<typeof meDtoSchema>;
+
+export const userSettingsDtoSchema = userSettingsPayloadBaseSchema.extend({
+  email: z.string().email().optional()
+}).superRefine(refineDigestPreferences);
+export type UserSettingsDto = z.infer<typeof userSettingsDtoSchema>;
+
+export const onboardingStateDtoSchema = z.object({
+  isComplete: z.boolean(),
+  settings: userSettingsDtoSchema
+});
+export type OnboardingStateDto = z.infer<typeof onboardingStateDtoSchema>;
 
 export const digestSourceLinkDtoSchema = z.object({
   sourceName: z.string(),
@@ -71,7 +129,7 @@ export const digestItemDtoSchema = z.object({
   index: z.number().int().nonnegative(),
   clusterId: z.string(),
   title: z.string(),
-  shortSummary: z.string(),
+  summary: z.string(),
   whyItMatters: z.string().optional(),
   sourceLinks: z.array(digestSourceLinkDtoSchema),
   topics: z.array(z.string()),
@@ -84,8 +142,9 @@ export const digestSummaryDtoSchema = z.object({
   userId: z.string(),
   localDate: z.string(),
   createdAt: z.string(),
-  sentAt: z.string().optional(),
-  itemCount: z.number().int().nonnegative()
+  deliveredAt: z.string().optional(),
+  itemCount: z.number().int().nonnegative(),
+  title: z.string()
 });
 export type DigestSummaryDto = z.infer<typeof digestSummaryDtoSchema>;
 
@@ -95,8 +154,7 @@ export const digestListDtoSchema = z.object({
 export type DigestListDto = z.infer<typeof digestListDtoSchema>;
 
 export const digestDetailDtoSchema = digestSummaryDtoSchema.extend({
-  recipientPhone: z.string().optional(),
-  smsBody: z.string(),
+  bodyText: z.string().optional(),
   items: z.array(digestItemDtoSchema)
 });
 export type DigestDetailDto = z.infer<typeof digestDetailDtoSchema>;
@@ -130,8 +188,7 @@ export const bucketDimensionsSchema = z.object({
 export type BucketDimensions = z.infer<typeof bucketDimensionsSchema>;
 
 export const summaryCacheKeySchema = z.object({
-  sourceArticleIds: z.array(z.string()).min(1),
-  category: topicCategorySchema,
+  clusterId: z.string().min(1),
   summaryLength: summaryLengthSchema,
   model: z.string().min(1),
   version: z.string().min(1)

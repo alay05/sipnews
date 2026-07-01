@@ -84,9 +84,9 @@ describe("core digest logic", () => {
     });
 
     expect(categoryCounts(selected)).toEqual({
-      general: 1,
-      technology: 2,
-      ai_development: 1,
+      world: 1,
+      tech: 2,
+      ai: 1,
       startups: 1
     });
   });
@@ -120,10 +120,10 @@ function categoryClusters(): StoryCluster[] {
     cluster("tech-1", ["tech"], 9),
     cluster("ai-1", ["openai"], 8),
     cluster("startup-1", ["startup"], 7),
-    cluster("tech-2", ["technology"], 6),
+    cluster("tech-2", ["tech"], 6),
     cluster("ai-2", ["github"], 5),
     cluster("startup-2", ["venture"], 4),
-    cluster("general-2", ["us"], 3)
+    cluster("world-2", ["us"], 3)
   ];
 }
 
@@ -135,7 +135,7 @@ function categoryCounts(
       counts[inferDigestCategory(item)] += 1;
       return counts;
     },
-    { general: 0, technology: 0, ai_development: 0, startups: 0 } as Record<
+    { world: 0, tech: 0, ai: 0, startups: 0 } as Record<
       DigestCategory,
       number
     >

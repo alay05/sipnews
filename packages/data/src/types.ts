@@ -1,4 +1,11 @@
 export type JsonObject = Record<string, unknown>;
+export type SummaryLength = "small" | "medium" | "large";
+export type CategoryCountMap = {
+  world: number;
+  tech: number;
+  ai: number;
+  startups: number;
+};
 
 export interface DataUser {
   id: string;
@@ -16,9 +23,10 @@ export interface UserDigestSettings {
   timezone: string;
   sendHour: number;
   digestMaxItems: number;
+  summaryLength: SummaryLength;
   deliveryChannel: string;
   deliveryAddress?: string;
-  topicWeights: Record<string, number>;
+  categoryCounts: CategoryCountMap;
   sourceWeights: Record<string, number>;
   mutedSources: string[];
   preferredBucketIds: string[];
@@ -110,6 +118,15 @@ export interface ClusterSummaryVariant {
   model?: string;
   promptVersion?: string;
   metadata?: JsonObject;
+}
+
+export interface PreparedDigestCluster {
+  clusterId: string;
+  bucketId: string;
+  title: string;
+  topics: string[];
+  score: number;
+  variants: ClusterSummaryVariant[];
 }
 
 export interface DigestRecord {

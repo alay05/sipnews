@@ -13,7 +13,7 @@ describe("bucket helpers", () => {
   it("derives bucket membership from normalized category inference", () => {
     expect(deriveBucketMembership(cluster("a", ["github"]))).toEqual({
       clusterId: "a",
-      bucket: "ai_development",
+      bucket: "ai",
       topics: ["github"]
     });
   });
@@ -21,14 +21,14 @@ describe("bucket helpers", () => {
   it("derives integer quotas from topic weights and total item count", () => {
     expect(
       deriveQuotaFromTopicWeights(
-        { ai_development: 3, technology: 1 },
+        { ai: 3, tech: 1 },
         5,
         new Date("2026-06-06T12:00:00Z")
       )
     ).toEqual({
-      general: 1,
-      technology: 1,
-      ai_development: 2,
+      world: 1,
+      tech: 1,
+      ai: 2,
       startups: 1
     });
   });
@@ -37,15 +37,15 @@ describe("bucket helpers", () => {
     const pools = deriveBucketPools([
       cluster("ai-1", ["ai"], 1),
       cluster("ai-2", ["github"], 1),
-      cluster("tech-1", ["technology"], 1),
+      cluster("tech-1", ["tech"], 1),
       cluster("startup-1", ["startup"], 1),
-      cluster("general-1", ["world"], 1)
+      cluster("world-1", ["world"], 1)
     ]);
 
     const selected = selectClustersForUserFromBuckets(
       pools,
       {
-        topicWeights: { ai_development: 3 },
+        topicWeights: { ai: 3 },
         sourceWeights: {},
         mutedSources: []
       },
@@ -56,24 +56,24 @@ describe("bucket helpers", () => {
       }
     );
 
-    expect(selected.map((item) => item.id)).toEqual(["general-1", "ai-1", "tech-1"]);
+    expect(selected.map((item) => item.id)).toEqual(["world-1", "ai-1", "tech-1"]);
   });
 
   it("generates stable summary cache keys for the semantic cache dimensions", () => {
     const key = generateSummaryCacheKey({
       clusterId: "cluster_123",
-      length: "short",
+      summaryLength: "small",
       model: "GPT-4.1-Mini",
-      promptVersion: "v2"
+      version: "v2"
     });
 
     expect(key).toMatch(/^summary_[a-f0-9]{32}$/);
     expect(key).toBe(
       generateSummaryCacheKey({
         clusterId: "cluster_123",
-        length: "short",
+        summaryLength: "small",
         model: "gpt-4.1-mini",
-        promptVersion: "v2"
+        version: "v2"
       })
     );
   });

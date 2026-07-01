@@ -14,6 +14,7 @@ import type {
   DeliveryRun,
   DigestRecord,
   IngestionRun,
+  PreparedDigestCluster,
   SourceRecord,
   ArticleRecord,
   StoryClusterRecord,
@@ -36,6 +37,12 @@ export class InMemoryUserRepository implements UserRepository {
       (user) =>
         user.externalAuthProvider === provider &&
         user.externalAuthSubject === subject
+    );
+  }
+
+  async findUserByEmail(email: string): Promise<DataUser | undefined> {
+    return [...this.users.values()].find(
+      (user) => user.email?.toLowerCase() === email.toLowerCase()
     );
   }
 
@@ -101,6 +108,27 @@ export class InMemoryContentRepository implements ContentRepository {
   ): Promise<void> {
     this.summaries.set(summary.id, { ...summary });
     for (const variant of variants) this.variants.set(variant.id, { ...variant });
+  }
+
+  async listPreparedClusters(): Promise<PreparedDigestCluster[]> {
+    return [...this.memberships.values()]
+      .map((membership) => {
+        const cluster = this.clusters.get(membership.clusterId);
+        if (!cluster) return undefined;
+        const variants = [...this.variants.values()].filter(
+          (variant) => variant.clusterId === membership.clusterId
+        );
+        return {
+          clusterId: membership.clusterId,
+          bucketId: membership.bucketId,
+          title: cluster.title,
+          topics: [...cluster.topics],
+          score: cluster.score,
+          variants: variants.map((variant) => ({ ...variant }))
+        };
+      })
+      .filter((value): value is PreparedDigestCluster => Boolean(value))
+      .sort((left, right) => right.score - left.score);
   }
 
   async getLatestSummaryVariant(
@@ -206,7 +234,7 @@ export function createInMemoryRepositories(): DataRepositories {
 function cloneSettings(settings: UserDigestSettings): UserDigestSettings {
   return {
     ...settings,
-    topicWeights: { ...settings.topicWeights },
+    categoryCounts: { ...settings.categoryCounts },
     sourceWeights: { ...settings.sourceWeights },
     mutedSources: [...settings.mutedSources],
     preferredBucketIds: [...settings.preferredBucketIds]

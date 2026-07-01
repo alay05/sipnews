@@ -26,9 +26,9 @@ export interface UserBucketSelectionOptions {
 
 export interface SummaryCacheKeyInput {
   clusterId: string;
-  length: "short" | "medium" | "long" | number;
+  summaryLength: "small" | "medium" | "large" | number;
   model: string;
-  promptVersion: string;
+  version: string;
 }
 
 export function deriveBucketMembership(cluster: StoryCluster): BucketMembership {
@@ -112,24 +112,24 @@ export function selectClustersForUserFromBuckets(
 export function generateSummaryCacheKey(input: SummaryCacheKeyInput): string {
   const normalized = [
     input.clusterId,
-    String(input.length),
+    String(input.summaryLength),
     input.model.trim().toLowerCase(),
-    input.promptVersion.trim()
+    input.version.trim()
   ].join("\n");
   return `summary_${hashContent(normalized).slice(0, 32)}`;
 }
 
 function emptyBucketPools(): ClusterBucketPools {
   return {
-    general: [],
-    technology: [],
-    ai_development: [],
+    world: [],
+    tech: [],
+    ai: [],
     startups: []
   };
 }
 
 function getBucketTieBreakOrder(date = new Date()): DigestCategory[] {
   return date.getUTCDate() % 2 === 1
-    ? ["general", "technology", "ai_development", "startups"]
-    : ["general", "ai_development", "technology", "startups"];
+    ? ["world", "tech", "ai", "startups"]
+    : ["world", "ai", "tech", "startups"];
 }
