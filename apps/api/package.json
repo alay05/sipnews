@@ -1,0 +1,18 @@
+{
+  "name": "@sms-news/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npm run build -w @sms-news/contracts && npm run build -w @sms-news/data && tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "npm run build -w @sms-news/contracts && npm run build -w @sms-news/data && npm run clean && tsc -p tsconfig.build.json",
+    "typecheck": "npm run build -w @sms-news/contracts && npm run build -w @sms-news/data && tsc --noEmit -p tsconfig.json",
+    "daily": "tsx src/runDailyDigest.ts"
+  },
+  "dependencies": {
+    "@sms-news/contracts": "0.1.0",
+    "@sms-news/data": "0.1.0"
+  }
+}

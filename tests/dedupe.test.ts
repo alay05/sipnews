@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { dedupeArticles, titleSimilarity } from "../src/core/dedupe.js";
-import type { Article } from "../src/types/articles.js";
+import { dedupeArticles, titleSimilarity } from "@sms-news/core";
+import type { Article } from "@sms-news/core";
 
 describe("dedupe", () => {
   it("groups exact canonical URL matches", () => {

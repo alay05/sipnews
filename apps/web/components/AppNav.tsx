@@ -1,5 +1,6 @@
 import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
+import { hasClerkPublishableKey } from "@/lib/clerkEnv";
 
 export function AppNav() {
   return (
@@ -17,7 +18,11 @@ export function AppNav() {
         <Link href="/app/settings" prefetch={false}>
           Settings
         </Link>
-        <UserButton afterSignOutUrl="/" />
+        {hasClerkPublishableKey() ? (
+          <UserButton afterSignOutUrl="/" />
+        ) : (
+          <span className="status-pill">Local</span>
+        )}
       </nav>
     </header>
   );

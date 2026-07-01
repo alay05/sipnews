@@ -1,10 +1,9 @@
-import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { createApiClient } from "@/lib/apiClient";
+import { getOptionalAuthToken } from "@/lib/authToken";
 
 export default async function AppHomePage() {
-  const { getToken } = await auth();
-  const api = createApiClient({ authToken: await getToken() });
+  const api = createApiClient({ authToken: await getOptionalAuthToken() });
   const digests = await api.getDigestHistory();
   const settings = await api.getSettings();
 

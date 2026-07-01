@@ -1,9 +1,12 @@
 {
   "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "rootDir": "src",
-    "outDir": "dist"
-  },
-  "include": ["src/**/*.ts"],
-  "exclude": ["tests/**/*.ts", "vitest.config.ts"]
+  "files": [],
+  "references": [
+    { "path": "./apps/api/tsconfig.build.json" },
+    { "path": "./apps/worker/tsconfig.build.json" },
+    { "path": "./packages/contracts/tsconfig.build.json" },
+    { "path": "./packages/core/tsconfig.build.json" },
+    { "path": "./packages/data/tsconfig.build.json" },
+    { "path": "./packages/config/tsconfig.build.json" }
+  ]
 }

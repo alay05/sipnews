@@ -1,6 +1,7 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { hasClerkPublishableKey } from "@/lib/clerkEnv";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,6 +14,14 @@ export default function RootLayout({
 }: Readonly<{
   children: ReactNode;
 }>) {
+  if (!hasClerkPublishableKey()) {
+    return (
+      <html lang="en">
+        <body>{children}</body>
+      </html>
+    );
+  }
+
   return (
     <ClerkProvider signInUrl="/sign-in" signUpUrl="/sign-up">
       <html lang="en">

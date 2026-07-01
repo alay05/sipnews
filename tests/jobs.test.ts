@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   dailyDigestErrorResponse,
   filterSources
-} from "../src/routes/jobs.js";
-import type { AppEnv } from "../src/config/env.js";
-import type { SourceConfig } from "../src/types/articles.js";
+} from "../apps/api/src/routes/jobs.js";
+import type { AppEnv } from "../apps/api/src/config/env.js";
+import type { SourceConfig } from "../apps/api/src/types/articles.js";
 
 describe("daily digest job helpers", () => {
   it("can disable GDELT sources during production debugging", () => {

@@ -4,7 +4,7 @@ import {
   createFeedbackToken,
   parseFeedbackCommand,
   verifyFeedbackToken
-} from "../src/core/feedback.js";
+} from "../apps/api/src/core/feedback.js";
 
 describe("feedback", () => {
   it("parses deterministic reply commands", () => {

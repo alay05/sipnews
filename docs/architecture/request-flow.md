@@ -43,5 +43,5 @@ This is the implemented HTTP flow in `apps/api`.
 ## API Base URLs
 
 - `PUBLIC_BASE_URL` is the API's externally reachable URL, used to build links and validate webhook URLs.
-- `VITE_API_BASE_URL` is the web client's browser-visible API URL.
+- `NEXT_PUBLIC_SMS_NEWS_API_URL` is the web client's browser-visible API URL.
 - `API_BASE_URL` is reserved for server-side worker-to-API calls if needed.

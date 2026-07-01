@@ -28,7 +28,7 @@ Use this guidance when multiple agents are working on the restructure in paralle
 
 ## Environment Variables
 
-- Add browser-visible variables only to `apps/web/.env.example`, using `VITE_*`.
+- Add browser-visible variables only to `apps/web/.env.example`, using `NEXT_PUBLIC_*`.
 - Add API secrets only to `apps/api/.env.example`.
 - Add worker-only operational settings only to `apps/worker/.env.example`.
 - Keep source config paths API-owned until a task moves source fetching to the worker.

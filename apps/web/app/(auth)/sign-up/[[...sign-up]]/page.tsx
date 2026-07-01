@@ -1,5 +1,6 @@
 import { SignUp } from "@clerk/nextjs";
 import Link from "next/link";
+import { hasClerkPublishableKey } from "@/lib/clerkEnv";
 
 export default function SignUpPage() {
   return (
@@ -23,18 +24,22 @@ export default function SignUpPage() {
       </section>
 
       <section className="auth-card panel">
-        <SignUp
-          path="/sign-up"
-          routing="path"
-          signInUrl="/sign-in"
-          fallbackRedirectUrl="/app/onboarding"
-          appearance={{
-            elements: {
-              cardBox: "clerk-card-box",
-              footer: "clerk-footer"
-            }
-          }}
-        />
+        {hasClerkPublishableKey() ? (
+          <SignUp
+            path="/sign-up"
+            routing="path"
+            signInUrl="/sign-in"
+            fallbackRedirectUrl="/app/onboarding"
+            appearance={{
+              elements: {
+                cardBox: "clerk-card-box",
+                footer: "clerk-footer"
+              }
+            }}
+          />
+        ) : (
+          <p className="muted">Set NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY to enable sign up.</p>
+        )}
       </section>
     </main>
   );

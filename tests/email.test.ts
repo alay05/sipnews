@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildDigestEmail } from "../src/core/email.js";
-import type { Digest } from "../src/types/articles.js";
+import { buildDigestEmail } from "../apps/api/src/core/email.js";
+import type { Digest } from "../apps/api/src/types/articles.js";
 
 describe("email", () => {
   it("builds plain-text and html digest emails", () => {

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { DigestPipeline, withTimeout } from "../src/services/digestPipeline.js";
-import { InMemoryStore } from "../src/services/store.js";
-import type { AppUser, StoryCluster } from "../src/types/articles.js";
-import type { NewsSummarizer } from "../src/services/ai.js";
-import type { EmailClient } from "../src/services/email.js";
+import { DigestPipeline, withTimeout } from "../apps/api/src/services/digestPipeline.js";
+import { InMemoryStore } from "../apps/api/src/services/store.js";
+import type { AppUser, StoryCluster } from "../apps/api/src/types/articles.js";
+import type { NewsSummarizer } from "../apps/api/src/services/ai.js";
+import type { EmailClient } from "../apps/api/src/services/email.js";
 
 describe("DigestPipeline", () => {
   it("is idempotent by user and local date", async () => {

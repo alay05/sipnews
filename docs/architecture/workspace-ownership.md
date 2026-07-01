@@ -21,13 +21,13 @@ The API currently owns source config loading through `SOURCES_CONFIG_PATH`. Keep
 
 ## apps/worker
 
-Owns future background execution:
+Owns background execution:
 
-- Queue consumers or scheduled workers once introduced.
-- Long-running source fetch, ranking, summarization, or email jobs after they are moved out of HTTP request handling.
+- Scheduled worker execution.
+- Long-running source fetch, ranking, summarization, and email jobs that run outside HTTP request handling.
 - Worker-only operational env, queue names, retry settings, and worker concurrency.
 
-Current state: `apps/worker/src/index.ts` is a scaffold. Do not document worker behavior as implemented until code exists.
+Current state: `apps/worker/src/index.ts` runs the bucketed digest worker against `packages/core` and `packages/data`.
 
 ## apps/web
 
@@ -36,9 +36,9 @@ Owns future browser UI:
 - Clerk browser integration.
 - Public API base URL.
 - Client-side routes, components, and user interaction.
-- Public `VITE_*` variables only.
+- Public `NEXT_PUBLIC_*` variables only.
 
-The web workspace should use `VITE_API_BASE_URL` for API calls and `VITE_CLERK_PUBLISHABLE_KEY` for Clerk browser auth. It must not receive server secrets.
+The web workspace should use `NEXT_PUBLIC_SMS_NEWS_API_URL` for API calls and `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` for Clerk browser auth. It must not receive server secrets.
 
 ## packages/config
 
@@ -60,5 +60,5 @@ Owns persistence interfaces, migrations-adjacent data access, and database imple
 
 - Source config ownership: `config/*.json` defines article sources. It does not own user identity, Clerk settings, delivery credentials, or API base URLs.
 - Delivery ownership: email delivery is supported through API-owned SendGrid settings. SMS settings are legacy and should default to disabled in examples.
-- Auth ownership: `VITE_CLERK_PUBLISHABLE_KEY` belongs to `apps/web`; `CLERK_SECRET_KEY` and Clerk webhook secrets belong to `apps/api`.
+- Auth ownership: `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` belongs to `apps/web`; `CLERK_SECRET_KEY` and Clerk webhook secrets belong to `apps/api`.
 - Package extraction should preserve behavior and tests before changing runtime flow.

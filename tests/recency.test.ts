@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { filterRecentArticles, isRecentArticle } from "../src/core/recency.js";
-import type { Article } from "../src/types/articles.js";
+import { filterRecentArticles, isRecentArticle } from "@sms-news/core";
+import type { Article } from "@sms-news/core";
 
 describe("article recency", () => {
   const now = new Date("2026-06-09T10:30:00Z");

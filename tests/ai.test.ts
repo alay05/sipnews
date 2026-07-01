@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { alignDigestItems } from "../src/services/ai.js";
-import type { Article, DigestItem, StoryCluster } from "../src/types/articles.js";
+import { alignDigestItems } from "../apps/api/src/services/ai.js";
+import type { Article, DigestItem, StoryCluster } from "../apps/api/src/types/articles.js";
 
 describe("AI digest item alignment", () => {
   it("returns one sequentially numbered item per selected cluster", () => {

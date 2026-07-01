@@ -1,9 +1,8 @@
-import { auth } from "@clerk/nextjs/server";
 import { createApiClient } from "@/lib/apiClient";
+import { getOptionalAuthToken } from "@/lib/authToken";
 
 export default async function OnboardingPage() {
-  const { getToken } = await auth();
-  const api = createApiClient({ authToken: await getToken() });
+  const api = createApiClient({ authToken: await getOptionalAuthToken() });
   const onboarding = await api.getOnboarding();
 
   return (

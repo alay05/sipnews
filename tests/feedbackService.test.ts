@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { parseFeedbackCommand } from "../src/core/feedback.js";
+import { parseFeedbackCommand } from "@sms-news/core";
 import {
   feedbackContextForDigestItem,
   saveFeedbackAndPreferences
-} from "../src/services/feedbackService.js";
-import { InMemoryStore } from "../src/services/store.js";
-import type { DigestItem } from "../src/types/articles.js";
+} from "../apps/api/src/services/feedbackService.js";
+import { InMemoryStore } from "../apps/api/src/services/store.js";
+import type { DigestItem } from "../apps/api/src/types/articles.js";
 
 describe("feedback service", () => {
   it("builds digest item context for feedback", () => {

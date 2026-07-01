@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canonicalizeUrl, normalizeArticle } from "../src/core/normalize.js";
+import { canonicalizeUrl, normalizeArticle } from "@sms-news/core";
 
 describe("normalize", () => {
   it("removes tracking params and URL fragments", () => {

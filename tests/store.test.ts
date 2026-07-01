@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { getLocalDate } from "../src/services/digestPipeline.js";
-import { formatPgDate } from "../src/services/pgStore.js";
-import { InMemoryStore } from "../src/services/store.js";
-import type { AppUser, Digest } from "../src/types/articles.js";
+import { getLocalDate } from "../apps/api/src/services/digestPipeline.js";
+import { formatPgDate } from "../apps/api/src/services/pgStore.js";
+import { InMemoryStore } from "../apps/api/src/services/store.js";
+import type { AppUser, Digest } from "../apps/api/src/types/articles.js";
 
 describe("user-scoped store behavior", () => {
   it("stores digests separately by user and local date", async () => {

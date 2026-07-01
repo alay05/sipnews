@@ -1,8 +1,13 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
 const isProtectedRoute = createRouteMatcher(["/app(.*)"]);
 
 export default clerkMiddleware(async (auth, request) => {
+  if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
+    return NextResponse.next();
+  }
+
   if (isProtectedRoute(request)) {
     await auth.protect();
   }

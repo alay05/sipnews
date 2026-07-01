@@ -3,8 +3,8 @@ import {
   type DigestCategory,
   inferDigestCategory,
   selectCategoryBalancedClusters
-} from "../src/core/ranking.js";
-import type { Article, StoryCluster } from "../src/types/articles.js";
+} from "../apps/api/src/core/ranking.js";
+import type { Article, StoryCluster } from "../apps/api/src/types/articles.js";
 
 describe("category-balanced ranking", () => {
   it("selects 1 general, 2 tech, 1 ai-dev, and 1 startup on odd UTC dates", () => {

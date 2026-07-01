@@ -1,5 +1,8 @@
 node_modules/
 dist/
+apps/*/.next/
+*.tsbuildinfo
 .env
 config/sources.json
 *.log
+.DS_Store

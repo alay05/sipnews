@@ -6,8 +6,8 @@ SMS News is a TypeScript monorepo for an AI-curated daily news digest. The curre
 
 ```text
 apps/api/       Express API, daily digest endpoint, source adapters, persistence, delivery clients
-apps/worker/    Worker workspace scaffold for future async jobs
-apps/web/       Web workspace scaffold for future Clerk-authenticated UI
+apps/worker/    Background digest worker using shared core/data packages
+apps/web/       Clerk-authenticated Next.js UI with typed placeholder API data
 packages/config/     Shared configuration package scaffold
 packages/contracts/  Shared API/data contract package scaffold
 packages/core/       Shared pure-domain package scaffold
@@ -69,7 +69,18 @@ For direct local execution:
 npm run daily -w @sms-news/api
 ```
 
-Current implementation note: `runDailyDigest.ts` still requires `PERSONAL_PHONE_NUMBER` to seed the user record, even when `SEND_SMS=false`. Treat that variable as legacy identity input until user/account ownership moves behind Clerk.
+Current implementation note: `runDailyDigest.ts` still requires `PERSONAL_PHONE_NUMBER` to seed the user record, even when `SEND_SMS=false`. Treat that variable as legacy identity input until user/account ownership moves fully behind Clerk.
+
+## Worker
+
+The worker runs the bucketed digest pipeline outside the HTTP API:
+
+```sh
+npm run build -w @sms-news/worker
+npm run start -w @sms-news/worker
+```
+
+It requires `DATABASE_URL`, `DIGEST_EMAIL_FROM`, and `SOURCES_CONFIG_PATH` to point at a readable source config. It shares `OPENAI_*`, `SENDGRID_API_KEY`, `PUBLIC_BASE_URL`, and freshness settings with the API.
 
 ## Environment Files
 
@@ -86,8 +97,8 @@ The root `.env.example` is only a pointer to those files. New env variables shou
 The web workspace is expected to own Clerk browser configuration:
 
 ```env
-VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
-VITE_API_BASE_URL=http://localhost:3000
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+NEXT_PUBLIC_SMS_NEWS_API_URL=http://localhost:3000
 ```
 
 Server-side Clerk verification keys belong in the API workspace when API auth is implemented:

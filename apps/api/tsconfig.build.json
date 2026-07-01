@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@sms-news/contracts": ["../../packages/contracts/dist/index.d.ts"],
+      "@sms-news/data": ["../../packages/data/dist/index.d.ts"]
+    }
+  },
+  "exclude": ["**/*.test.ts"]
+}

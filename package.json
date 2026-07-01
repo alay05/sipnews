@@ -3,18 +3,22 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "engines": {
     "node": "22.x"
   },
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.js",
-    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
-    "build": "npm run clean && tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "dev": "npm run dev -w @sms-news/api",
+    "start": "npm run start -w @sms-news/api",
+    "clean": "node -e \"const fs=require('node:fs'); for (const path of ['dist','apps/api/dist','apps/web/.next','apps/worker/dist','packages/contracts/dist','packages/core/dist','packages/data/dist','packages/config/dist']) fs.rmSync(path, { recursive: true, force: true })\"",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "vitest run",
     "test:watch": "vitest",
-    "daily": "tsx src/runDailyDigest.ts"
+    "daily": "npm run daily -w @sms-news/api"
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",

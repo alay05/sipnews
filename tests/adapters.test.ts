@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   buildGdeltUrl,
   mapGdeltResponse
-} from "../src/adapters/gdeltAdapter.js";
+} from "../apps/api/src/adapters/gdeltAdapter.js";
 import {
   buildGuardianUrl,
   mapGuardianResponse
-} from "../src/adapters/guardianAdapter.js";
-import { loadSourcesConfig } from "../src/config/sources.js";
-import type { SourceConfig } from "../src/types/articles.js";
+} from "../apps/api/src/adapters/guardianAdapter.js";
+import { loadSourcesConfig } from "../apps/api/src/config/sources.js";
+import type { SourceConfig } from "../apps/api/src/types/articles.js";
 
 const guardianSource: SourceConfig = {
   id: "guardian-world",

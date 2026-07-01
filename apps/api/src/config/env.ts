@@ -31,7 +31,9 @@ const envSchema = z
   DIGEST_SEND_HOUR: z.coerce.number().int().min(0).max(23).default(7),
   DIGEST_MAX_ITEMS: z.coerce.number().int().min(1).max(10).default(5),
   JOB_SECRET: z.string().default("change-me"),
-  FEEDBACK_SECRET: z.string().default("change-me-too")
+  FEEDBACK_SECRET: z.string().default("change-me-too"),
+  CLERK_JWT_ISSUER: optionalString,
+  CLERK_JWT_AUDIENCE: optionalString
 })
   .superRefine((env, ctx) => {
     if (!env.SEND_EMAIL) return;
