@@ -12,6 +12,7 @@ const envSchema = z
     PUBLIC_BASE_URL: z.string().url().default("http://localhost:3000"),
     DATABASE_URL: z.string().min(1),
     CLERK_JWT_ISSUER: z.string().min(1),
+    CLERK_SECRET_KEY: optionalString,
     CLERK_JWT_AUDIENCE: optionalString,
     ALLOWED_USER_EMAILS: optionalString
   });

@@ -16,6 +16,7 @@ export function buildApp(
     "/v1/me",
     createClerkAuthMiddleware(env),
     createMeRouter(productData, {
+      clerkSecretKey: env.CLERK_SECRET_KEY,
       allowedUserEmails: parseAllowedUserEmails(env.ALLOWED_USER_EMAILS)
     })
   );

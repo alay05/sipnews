@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { Router } from "express";
+import { createClerkClient } from "@clerk/backend";
 import {
   categoryCountMapSchema,
   digestDetailDtoSchema,
@@ -34,6 +35,7 @@ interface RequestWithUser extends AuthenticatedRequest {
 
 interface MeRouterOptions {
   allowedUserEmails?: string[];
+  clerkSecretKey?: string;
 }
 
 export function createMeRouter(
@@ -41,6 +43,9 @@ export function createMeRouter(
   options: MeRouterOptions = {}
 ): Router {
   const router = Router();
+  const clerkClient = options.clerkSecretKey
+    ? createClerkClient({ secretKey: options.clerkSecretKey })
+    : undefined;
 
   router.use(async (req: RequestWithUser, res, next) => {
     if (!req.auth) {
@@ -48,7 +53,10 @@ export function createMeRouter(
       return;
     }
 
-    const authEmail = normalizedEmail(stringClaim(req.auth.claims.email));
+    const authEmail = normalizedEmail(
+      stringClaim(req.auth.claims.email) ??
+        (await resolveClerkPrimaryEmail(clerkClient, req.auth.subject))
+    );
     if (options.allowedUserEmails?.length) {
       if (!authEmail || !options.allowedUserEmails.includes(authEmail)) {
         res.status(403).json({ error: "Access not enabled for this account" });
@@ -338,4 +346,27 @@ function stringClaim(value: unknown): string | undefined {
 
 function normalizedEmail(value: string | undefined): string | undefined {
   return value?.trim().toLowerCase();
+}
+
+async function resolveClerkPrimaryEmail(
+  clerkClient: ReturnType<typeof createClerkClient> | undefined,
+  subject: string
+): Promise<string | undefined> {
+  if (!clerkClient) return undefined;
+
+  try {
+    const user = await clerkClient.users.getUser(subject);
+    const primaryEmailId = user.primaryEmailAddressId;
+    const primaryEmail = user.emailAddresses.find((email) => email.id === primaryEmailId);
+    return stringClaim(primaryEmail?.emailAddress);
+  } catch (error) {
+    console.warn(
+      JSON.stringify({
+        event: "clerk_email_lookup_failed",
+        subject,
+        error: error instanceof Error ? error.message : String(error)
+      })
+    );
+    return undefined;
+  }
 }

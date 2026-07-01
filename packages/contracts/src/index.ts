@@ -110,7 +110,7 @@ export type MeDto = z.infer<typeof meDtoSchema>;
 
 export const userSettingsDtoSchema = userSettingsPayloadBaseSchema.extend({
   email: z.string().email().optional()
-}).superRefine(refineDigestPreferences);
+});
 export type UserSettingsDto = z.infer<typeof userSettingsDtoSchema>;
 
 export const onboardingStateDtoSchema = z.object({
