@@ -6,8 +6,8 @@
     "outDir": "dist",
     "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
     "paths": {
-      "@sipnews/contracts": ["../../packages/contracts/dist/index.d.ts"],
-      "@sipnews/data": ["../../packages/data/dist/index.d.ts"]
+      "@sipnews/contracts": ["../../packages/contracts/src/index.ts"],
+      "@sipnews/data": ["../../packages/data/src/index.ts"]
     }
   },
   "include": ["src/**/*.ts"],
