@@ -9,13 +9,13 @@ describe("email", () => {
     expect(email.subject).toBe("Daily news digest - 2026-06-05");
     expect(email.text).toContain("1. AI tools ship new coding features");
     expect(email.text).toContain("https://example.com/a");
-    expect(email.text).toContain("Text HELP for command options.");
-    expect(email.text).not.toContain("Reply by SMS with +2");
+    expect(email.text).not.toContain("Text HELP for command options.");
+    expect(email.text).not.toContain("SMS");
     expect(email.text).not.toContain("Read all:");
     expect(email.html).toContain("<h1>Daily news digest</h1>");
     expect(email.html).toContain("<h2>1. AI tools ship new coding features</h2>");
     expect(email.html).toContain('href="https://example.com/a"');
-    expect(email.html).toContain("Text HELP for command options.");
+    expect(email.html).not.toContain("Text HELP for command options.");
     expect(email.html).not.toContain("Read all stories");
     expect(email.html).toContain("These updates matter because");
   });
