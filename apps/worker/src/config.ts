@@ -18,28 +18,32 @@ const sourcesFileSchema = z.object({
 });
 
 export interface WorkerEnv {
-  databaseUrl?: string;
+  databaseUrl: string;
   sourcesConfigPath: string;
   publicBaseUrl: string;
-  emailFrom?: string;
-  sendgridApiKey?: string;
+  emailFrom: string;
+  sendgridApiKey: string;
   sourceFetchTimeoutMs: number;
   maxArticleAgeDays: number;
-  openAiApiKey?: string;
+  openAiApiKey: string;
   openAiModel: string;
   summaryPromptVersion: string;
 }
 
 export function loadWorkerEnv(env: NodeJS.ProcessEnv = process.env): WorkerEnv {
+  const databaseUrl = requiredValue(env.DATABASE_URL, "DATABASE_URL");
+  const emailFrom = requiredValue(env.DIGEST_EMAIL_FROM, "DIGEST_EMAIL_FROM");
+  const sendgridApiKey = requiredValue(env.SENDGRID_API_KEY, "SENDGRID_API_KEY");
+  const openAiApiKey = requiredValue(env.OPENAI_API_KEY, "OPENAI_API_KEY");
   return {
-    databaseUrl: env.DATABASE_URL,
+    databaseUrl,
     sourcesConfigPath: env.SOURCES_CONFIG_PATH ?? "config/sources.json",
     publicBaseUrl: env.PUBLIC_BASE_URL ?? "http://localhost:3000",
-    emailFrom: env.DIGEST_EMAIL_FROM,
-    sendgridApiKey: env.SENDGRID_API_KEY,
+    emailFrom,
+    sendgridApiKey,
     sourceFetchTimeoutMs: parsePositiveInteger(env.SOURCE_FETCH_TIMEOUT_MS, 15000),
     maxArticleAgeDays: parsePositiveInteger(env.MAX_ARTICLE_AGE_DAYS, 7),
-    openAiApiKey: env.OPENAI_API_KEY,
+    openAiApiKey,
     openAiModel: env.OPENAI_MODEL ?? "gpt-4.1-mini",
     summaryPromptVersion: env.SUMMARY_PROMPT_VERSION ?? "worker-v1"
   };
@@ -55,4 +59,9 @@ function parsePositiveInteger(value: string | undefined, fallback: number): numb
   if (!value) return fallback;
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function requiredValue(value: string | undefined, key: string): string {
+  if (!value) throw new Error(`${key} is required`);
+  return value;
 }

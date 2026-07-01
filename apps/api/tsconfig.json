@@ -2,11 +2,6 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "composite": true,
-    "baseUrl": ".",
-    "paths": {
-      "@sms-news/contracts": ["../../packages/contracts/src/index.ts"],
-      "@sms-news/data": ["../../packages/data/src/index.ts"]
-    },
     "rootDir": "src",
     "outDir": "dist",
     "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"

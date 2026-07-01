@@ -12,9 +12,9 @@ This repository is in the middle of a workspace restructure. The map below descr
 
 ## Apps
 
-- `apps/api/`: implemented Express API and daily digest job.
-- `apps/worker/`: scaffolded worker package. It currently logs readiness only.
-- `apps/web/`: scaffolded web app directory. It currently owns env naming for browser-facing API and Clerk settings.
+- `apps/api/`: implemented Express product API for authenticated account endpoints.
+- `apps/worker/`: implemented bucketed digest worker package.
+- `apps/web/`: implemented Clerk-authenticated web app shell for onboarding, settings, and digest history.
 
 ## Packages
 

@@ -1,47 +1,43 @@
 # Request Flow Summary
 
-This is the implemented HTTP flow in `apps/api`.
+This is the implemented product/API flow after the worker cutover.
 
 ## Server Startup
 
 1. `apps/api/src/index.ts` calls `loadEnv()`.
-2. `createStore(env)` chooses `PgStore` when `DATABASE_URL` is set, otherwise `InMemoryStore`.
-3. `buildApp(env, store)` wires Express middleware, summarizer, SMS client, email client, digest pipeline, and routers.
+2. `createProductDataAccess(env)` chooses Postgres-backed product data access.
+3. `buildApp(env, productData)` wires Clerk auth middleware and product routes.
 4. The API listens on `PORT`.
 
-## Daily Digest Request
+## Authenticated Product Request
 
-1. A scheduler or operator calls `POST /jobs/daily-digest`.
-2. `apps/api/src/routes/jobs.ts` validates the `x-job-secret` header against `JOB_SECRET`.
-3. The route loads and filters sources from `SOURCES_CONFIG_PATH`.
-4. The route seeds the configured personal user when `PERSONAL_PHONE_NUMBER` is present.
-5. Active users are loaded from the store.
-6. `DigestPipeline.run()` executes once per active user.
+1. The web app sends a Clerk bearer token to `/v1/me/*`.
+2. `apps/api/src/auth/clerk.ts` verifies the token using `CLERK_JWT_ISSUER` and optional `CLERK_JWT_AUDIENCE`.
+3. `apps/api/src/routes/me.ts` normalizes the Clerk identity and optionally enforces `ALLOWED_USER_EMAILS`.
+4. If the user does not exist yet, the API provisions a generalized internal user record and default digest settings.
+5. The route reads or updates onboarding/settings/digest data through `packages/data`.
 
-## Pipeline
+## Worker Digest Pipeline
 
-1. Determine the user's local date and reuse an existing same-day digest when present.
-2. Save configured source metadata.
-3. Fetch each source through its adapter.
-4. Normalize URLs and article content.
-5. Filter stale articles by `MAX_ARTICLE_AGE_DAYS`.
-6. Save articles.
-7. Dedupe articles into story clusters.
-8. Rank clusters using recency, source priority, category balance, and stored preferences.
-9. Summarize selected clusters with OpenAI when configured, or the local stub otherwise.
-10. Save the digest and digest items.
-11. Send email when `SEND_EMAIL=true`.
-12. Skip SMS when `SEND_SMS=false`.
+1. A scheduler starts `apps/worker/src/index.ts`.
+2. The worker loads sources from `SOURCES_CONFIG_PATH`.
+3. It fetches and normalizes articles once per run.
+4. It deduplicates articles into shared story clusters.
+5. It persists canonical cluster summaries and `small` / `medium` / `large` summary variants.
+6. It selects digest items per user from shared bucket pools using per-user settings.
+7. It stores digests and sends due email deliveries.
 
 ## Other Routes
 
 - `GET /health`: basic liveness response.
-- `GET /d/:digestId`: returns a stored digest.
-- `GET /f/:signedToken`: records signed link feedback.
-- `POST /webhooks/twilio/inbound`: legacy SMS feedback route.
+- `GET /v1/me`: current authenticated account.
+- `GET/PUT /v1/me/onboarding`: onboarding state and save.
+- `GET/PUT /v1/me/settings`: settings state and save.
+- `GET /v1/me/digests`: digest history.
+- `GET /v1/me/digests/:id`: digest detail.
+- `POST /v1/me/feedback`: feedback persistence.
 
 ## API Base URLs
 
 - `PUBLIC_BASE_URL` is the API's externally reachable URL, used to build links and validate webhook URLs.
 - `NEXT_PUBLIC_SMS_NEWS_API_URL` is the web client's browser-visible API URL.
-- `API_BASE_URL` is reserved for server-side worker-to-API calls if needed.

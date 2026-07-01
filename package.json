@@ -18,7 +18,11 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "vitest run",
     "test:watch": "vitest",
-    "daily": "npm run daily -w @sms-news/api"
+    "worker:prepare": "npm run build -w @sms-news/worker && npm run run:prepare -w @sms-news/worker",
+    "worker:deliver": "npm run build -w @sms-news/worker && npm run run:deliver -w @sms-news/worker",
+    "db:migrate": "node scripts/db-migrate.mjs",
+    "db:seed:first-user": "node scripts/db-seed-first-user.mjs",
+    "db:setup": "npm run db:migrate && npm run db:seed:first-user"
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
@@ -27,7 +31,6 @@
     "openai": "^4.77.0",
     "pg": "^8.13.1",
     "rss-parser": "^3.13.0",
-    "twilio": "^5.4.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {

@@ -26,7 +26,6 @@ The worker owns execution that does not need to happen inside an HTTP request:
 
 - Do not place browser Clerk keys in the worker.
 - Do not make the worker depend on Express route modules.
-- If the worker calls the API, use `API_BASE_URL` and an explicit auth mechanism.
 - If the worker imports shared code, prefer packages over imports from `apps/api/src`.
 
 ## Current Env

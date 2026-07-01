@@ -1,21 +1,25 @@
 # SMS News
 
-SMS News is a TypeScript monorepo for an AI-curated daily news digest. The current implementation exposes an Express API that fetches configured sources, ranks and summarizes article clusters, stores digests, and delivers them by SendGrid email. SMS-related code still exists for feedback and legacy delivery paths, but the restructured repo treats email as the supported delivery channel.
+SMS News is a TypeScript monorepo for an AI-curated daily news digest. The current runtime is split across three workspaces:
+
+- `apps/web`: Clerk-authenticated Next.js account UI.
+- `apps/api`: Express product API for authenticated account, onboarding, settings, digest history, and feedback endpoints.
+- `apps/worker`: bucketed digest worker that fetches sources once, builds shared clusters and summary variants, and assembles per-user email digests.
 
 ## Workspace Layout
 
 ```text
-apps/api/       Express API, daily digest endpoint, source adapters, persistence, delivery clients
-apps/worker/    Background digest worker using shared core/data packages
-apps/web/       Clerk-authenticated Next.js UI with typed placeholder API data
+apps/api/            Express API for Clerk-authenticated product endpoints
+apps/worker/         Background digest worker using shared core/data packages
+apps/web/            Clerk-authenticated Next.js UI
 packages/config/     Shared configuration package scaffold
-packages/contracts/  Shared API/data contract package scaffold
-packages/core/       Shared pure-domain package scaffold
-packages/data/       Shared data-access package scaffold
-config/         Source configuration files consumed by the API
-migrations/     Postgres schema migrations
-tests/          Current Vitest suite for API-era behavior
-docs/architecture/  Repo map, ownership, flow, and merge guidance
+packages/contracts/  Shared API/data contracts
+packages/core/       Shared pure-domain digest logic
+packages/data/       Shared persistence interfaces and implementations
+config/              Source configuration files consumed by the worker
+migrations/          Postgres schema migrations
+tests/               Vitest coverage across legacy and new paths
+docs/architecture/   Repo map, ownership, flow, and merge guidance
 ```
 
 The root package uses npm workspaces:
@@ -37,58 +41,82 @@ Install dependencies from the root when dependency sync is part of your task:
 npm install
 ```
 
-For normal local API work, copy the API env example into the API workspace:
+For local setup, copy the workspace env examples you need:
 
 ```sh
 cp apps/api/.env.example apps/api/.env
+cp apps/worker/.env.example apps/worker/.env
+cp apps/web/.env.example apps/web/.env
 cp config/sources.example.json config/sources.json
 ```
 
-Edit `apps/api/.env` and `config/sources.json`, then run:
+Then run the workspaces independently:
 
 ```sh
 npm run dev -w @sms-news/api
+npm run dev -w @sms-news/web
+npm run db:setup
 ```
 
-The API listens on `PORT` and exposes `GET /health`.
+The API listens on `PORT` and exposes `GET /health` plus authenticated `/v1/me/*` routes.
 
-## Daily Digest Job
+## Product API
 
-The implemented scheduled job is still owned by `apps/api`:
+The API owns authenticated account reads and writes:
 
-```sh
-curl -X POST http://localhost:3000/jobs/daily-digest \
-  -H "x-job-secret: change-me"
-```
+- `GET /v1/me`
+- `GET /v1/me/onboarding`
+- `PUT /v1/me/onboarding`
+- `GET /v1/me/settings`
+- `PUT /v1/me/settings`
+- `GET /v1/me/digests`
+- `GET /v1/me/digests/:id`
+- `POST /v1/me/feedback`
 
-`POST /jobs/daily-digest` loads sources from `SOURCES_CONFIG_PATH`, seeds the configured user when present, fetches articles, deduplicates and ranks clusters, asks OpenAI for summaries when configured, stores the digest, and sends email when `SEND_EMAIL=true`.
-
-For direct local execution:
-
-```sh
-npm run daily -w @sms-news/api
-```
-
-Current implementation note: `runDailyDigest.ts` still requires `PERSONAL_PHONE_NUMBER` to seed the user record, even when `SEND_SMS=false`. Treat that variable as legacy identity input until user/account ownership moves fully behind Clerk.
+The API provisions a generalized internal user record from Clerk identity on first authenticated access and persists digest settings through `packages/data`.
 
 ## Worker
 
-The worker runs the bucketed digest pipeline outside the HTTP API:
+The worker owns scheduled digest generation:
 
 ```sh
-npm run build -w @sms-news/worker
-npm run start -w @sms-news/worker
+npm run worker:prepare
+npm run worker:deliver
 ```
 
-It requires `DATABASE_URL`, `DIGEST_EMAIL_FROM`, and `SOURCES_CONFIG_PATH` to point at a readable source config. It shares `OPENAI_*`, `SENDGRID_API_KEY`, `PUBLIC_BASE_URL`, and freshness settings with the API.
+It requires `DATABASE_URL`, `OPENAI_API_KEY`, `SENDGRID_API_KEY`, `DIGEST_EMAIL_FROM`, and `SOURCES_CONFIG_PATH`.
+
+Recommended Render schedule:
+
+- `worker:prepare` once daily at `4:00 AM America/New_York`
+- `worker:deliver` hourly
+
+Render cron or any scheduler should target the worker entrypoint, not an API route.
+
+## Database Setup
+
+For a clean database:
+
+```sh
+npm run db:migrate
+npm run db:seed:first-user
+```
+
+Or both together:
+
+```sh
+npm run db:setup
+```
+
+`db:seed:first-user` clears old digests/content tables and seeds the current first user preferences into the clean schema.
 
 ## Environment Files
 
 Workspace env examples live next to the workspaces that own them:
 
-- `apps/api/.env.example` covers the Express API, job endpoint, source config, OpenAI, Postgres, SendGrid, and legacy SMS toggles.
-- `apps/worker/.env.example` covers the worker scaffold and shared service connections it is expected to consume later.
-- `apps/web/.env.example` covers public web settings such as Clerk publishable key and API base URL.
+- `apps/api/.env.example` covers the Express API, database access, Clerk verification, and optional access gating.
+- `apps/worker/.env.example` covers the worker runtime, source config, summarization, and email delivery.
+- `apps/web/.env.example` covers Clerk browser settings and the API base URL.
 
 The root `.env.example` is only a pointer to those files. New env variables should be added to the owning workspace example and documented in `docs/architecture/workspace-ownership.md`.
 
@@ -101,18 +129,19 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 NEXT_PUBLIC_SMS_NEWS_API_URL=http://localhost:3000
 ```
 
-Server-side Clerk verification keys belong in the API workspace when API auth is implemented:
+Server-side Clerk verification keys belong in the API workspace:
 
 ```env
-CLERK_SECRET_KEY=sk_test_...
-CLERK_WEBHOOK_SECRET=whsec_...
+CLERK_JWT_ISSUER=https://...
+CLERK_JWT_AUDIENCE=
+ALLOWED_USER_EMAILS=you@example.com
 ```
 
 Those keys are documented now so agents building the web/API boundary do not invent separate names.
 
 ## Source Config Ownership
 
-Source definitions are JSON files under `config/`. The API currently reads them via `SOURCES_CONFIG_PATH`, with `config/sources.example.json` as the template and `config/sources.json` ignored for local edits.
+Source definitions are JSON files under `config/`. The worker reads them via `SOURCES_CONFIG_PATH`, with `config/sources.example.json` as the template and `config/sources.json` ignored for local edits.
 
 Source config describes external article sources only. It should not carry user identity, Clerk settings, delivery credentials, or API base URLs.
 

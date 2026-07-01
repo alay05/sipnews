@@ -8,8 +8,7 @@
     "start": "node dist/index.js",
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "build": "npm run build -w @sms-news/contracts && npm run build -w @sms-news/data && npm run clean && tsc -p tsconfig.build.json",
-    "typecheck": "npm run build -w @sms-news/contracts && npm run build -w @sms-news/data && tsc --noEmit -p tsconfig.json",
-    "daily": "tsx src/runDailyDigest.ts"
+    "typecheck": "npm run build -w @sms-news/contracts && npm run build -w @sms-news/data && tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@sms-news/contracts": "0.1.0",
