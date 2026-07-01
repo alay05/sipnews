@@ -1,5 +1,5 @@
 {
-  "name": "@sms-news/web",
+  "name": "@sipnews/web",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@sms-news/contracts": "0.1.0",
+    "@sipnews/contracts": "0.1.0",
     "@clerk/nextjs": "^6.31.7",
     "next": "^15.4.0",
     "react": "^19.1.0",

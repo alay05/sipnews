@@ -1,6 +1,6 @@
-# SMS News
+# Sip
 
-SMS News is a TypeScript monorepo for an AI-curated email news digest. The current system has three deployed runtimes:
+Sip is a TypeScript monorepo for an AI-curated email news digest. The current system has three deployed runtimes:
 
 - `apps/web`: Next.js account UI with Clerk auth
 - `apps/api`: Express API for onboarding, settings, digest history, and feedback
@@ -56,8 +56,8 @@ Recommended local startup:
 
 ```sh
 npm run db:setup
-npm run dev -w @sms-news/api
-npm run dev -w @sms-news/web -- --port 3001
+npm run dev -w @sipnews/api
+npm run dev -w @sipnews/web -- --port 3001
 ```
 
 Manual worker runs:

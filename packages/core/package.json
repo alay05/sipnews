@@ -1,5 +1,5 @@
 {
-  "name": "@sms-news/core",
+  "name": "@sipnews/core",
   "version": "0.1.0",
   "private": true,
   "type": "module",

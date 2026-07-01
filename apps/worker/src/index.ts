@@ -9,7 +9,7 @@ import {
   PgDigestRepository,
   PgRunRepository,
   PgUserRepository
-} from "@sms-news/data";
+} from "@sipnews/data";
 
 export async function main(): Promise<void> {
   const env = loadWorkerEnv();

@@ -7,7 +7,7 @@ export default function SignUpPage() {
     <main className="page-shell auth-page">
       <section className="auth-copy">
         <Link className="brand" href="/">
-          SMS News
+          Sip
         </Link>
         <p className="eyebrow">Email magic link setup</p>
         <h1>Create account</h1>

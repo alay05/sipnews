@@ -1,12 +1,12 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { createInMemoryRepositories, seedDevUser } from "@sms-news/data";
+import { createInMemoryRepositories, seedDevUser } from "@sipnews/data";
 import type {
   ClusterSummary,
   ClusterSummaryVariant,
   DigestRecord
-} from "@sms-news/data";
+} from "@sipnews/data";
 
 describe("data repositories", () => {
   it("stores users by external auth identity with digest settings", async () => {

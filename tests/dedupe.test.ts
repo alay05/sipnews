@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { dedupeArticles, titleSimilarity } from "@sms-news/core";
-import type { Article } from "@sms-news/core";
+import { dedupeArticles, titleSimilarity } from "@sipnews/core";
+import type { Article } from "@sipnews/core";
 
 describe("dedupe", () => {
   it("groups exact canonical URL matches", () => {

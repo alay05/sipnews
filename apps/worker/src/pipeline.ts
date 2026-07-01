@@ -11,7 +11,7 @@ import {
   type RawArticle,
   type SourceConfig,
   type StoryCluster
-} from "@sms-news/core";
+} from "@sipnews/core";
 import type {
   ArticleRecord,
   BucketDefinition,
@@ -24,7 +24,7 @@ import type {
   SourceRecord,
   StoryClusterRecord,
   UserDigestSettings
-} from "@sms-news/data";
+} from "@sipnews/data";
 import { buildDigestEmail } from "./email.js";
 import type {
   ClusterSummaryDraft,

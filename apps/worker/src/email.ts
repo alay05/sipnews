@@ -1,5 +1,5 @@
 import sgMail from "@sendgrid/mail";
-import type { DigestRecord } from "@sms-news/data";
+import type { DigestRecord } from "@sipnews/data";
 import type { EmailClient, EmailMessage } from "./types.js";
 
 export class ConsoleEmailClient implements EmailClient {

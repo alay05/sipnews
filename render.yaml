@@ -1,12 +1,12 @@
 services:
   - type: web
-    name: sms-news-web
+    name: sipnews-web
     runtime: node
     plan: starter
     buildCommand: npm install && npm run build:web
     startCommand: npm run start:web
     envVars:
-      - key: NEXT_PUBLIC_SMS_NEWS_API_URL
+      - key: NEXT_PUBLIC_SIPNEWS_API_URL
         sync: false
       - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
         sync: false
@@ -27,7 +27,7 @@ services:
         - package.json
         - package-lock.json
   - type: web
-    name: sms-news-api
+    name: sipnews-api
     runtime: node
     plan: starter
     buildCommand: npm install && npm run build:api
@@ -57,7 +57,7 @@ services:
         - package.json
         - package-lock.json
   - type: cron
-    name: sms-news-worker-prepare
+    name: sipnews-worker-prepare
     runtime: node
     plan: starter
     schedule: "0 9 * * *"
@@ -97,7 +97,7 @@ services:
         - package.json
         - package-lock.json
   - type: cron
-    name: sms-news-worker-deliver
+    name: sipnews-worker-deliver
     runtime: node
     plan: starter
     schedule: "0 * * * *"

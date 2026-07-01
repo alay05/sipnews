@@ -6,5 +6,5 @@ const env = loadEnv();
 const app = buildApp(env, createProductDataAccess(env));
 
 app.listen(env.PORT, () => {
-  console.log(`sms-news-api listening on port ${env.PORT}`);
+  console.log(`sipnews-api listening on port ${env.PORT}`);
 });

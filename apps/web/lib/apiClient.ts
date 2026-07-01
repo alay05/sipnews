@@ -9,7 +9,7 @@ import type {
   OnboardingStateDto,
   UserSettingsDto,
   UserSettingsPayload
-} from "@sms-news/contracts";
+} from "@sipnews/contracts";
 
 type ApiClientOptions = {
   authToken?: string | null;
@@ -17,14 +17,14 @@ type ApiClientOptions = {
 };
 
 const defaultBaseUrl =
-  process.env.SMS_NEWS_API_URL ?? process.env.NEXT_PUBLIC_SMS_NEWS_API_URL;
+  process.env.SIPNEWS_API_URL ?? process.env.NEXT_PUBLIC_SIPNEWS_API_URL;
 
 export function createApiClient(options: ApiClientOptions = {}) {
   const baseUrl = options.baseUrl ?? defaultBaseUrl;
 
   async function request<T>(path: string, init?: RequestInit): Promise<T> {
     if (!baseUrl) {
-      throw new Error("SMS News API base URL is not configured");
+      throw new Error("Sip API base URL is not configured");
     }
 
     const response = await fetch(new URL(path, baseUrl), {
@@ -39,7 +39,7 @@ export function createApiClient(options: ApiClientOptions = {}) {
     });
 
     if (!response.ok) {
-      throw new Error(`SMS News API request failed: ${response.status}`);
+      throw new Error(`Sip API request failed: ${response.status}`);
     }
 
     return (await response.json()) as T;

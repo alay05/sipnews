@@ -5,7 +5,7 @@ import { hasClerkPublishableKey } from "@/lib/clerkEnv";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SMS News",
+  title: "Sip",
   description: "A focused news digest configured for your phone and inbox."
 };
 

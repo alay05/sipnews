@@ -6,7 +6,7 @@ export function AppNav() {
   return (
     <header className="app-topbar">
       <Link className="brand" href="/app" prefetch={false}>
-        SMS News
+        Sip
       </Link>
       <nav className="app-nav" aria-label="Application">
         <Link href="/app/digests" prefetch={false}>

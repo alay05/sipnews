@@ -6,7 +6,7 @@ import {
   type DataRepositories,
   type DatabaseClient,
   type DigestRecord
-} from "@sms-news/data";
+} from "@sipnews/data";
 import type { AppEnv } from "../config/env.js";
 
 export interface ProductDataAccess {

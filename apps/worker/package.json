@@ -1,5 +1,5 @@
 {
-  "name": "@sms-news/worker",
+  "name": "@sipnews/worker",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,13 +9,13 @@
     "run:prepare": "node dist/bootstrap.js prepare",
     "run:deliver": "node dist/bootstrap.js deliver",
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
-    "build": "npm run build -w @sms-news/contracts && npm run build -w @sms-news/core && npm run build -w @sms-news/data && npm run clean && tsc -p tsconfig.build.json",
-    "typecheck": "npm run build -w @sms-news/contracts && npm run build -w @sms-news/core && npm run build -w @sms-news/data && tsc --noEmit -p tsconfig.json",
+    "build": "npm run build -w @sipnews/contracts && npm run build -w @sipnews/core && npm run build -w @sipnews/data && npm run clean && tsc -p tsconfig.build.json",
+    "typecheck": "npm run build -w @sipnews/contracts && npm run build -w @sipnews/core && npm run build -w @sipnews/data && tsc --noEmit -p tsconfig.json",
     "test": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
-    "@sms-news/contracts": "0.1.0",
-    "@sms-news/core": "0.1.0",
-    "@sms-news/data": "0.1.0"
+    "@sipnews/contracts": "0.1.0",
+    "@sipnews/core": "0.1.0",
+    "@sipnews/data": "0.1.0"
   }
 }

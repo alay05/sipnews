@@ -35,7 +35,7 @@ Owns browser UI:
 - Client-side routes, components, and user interaction.
 - Public `NEXT_PUBLIC_*` variables only.
 
-The web workspace should use `NEXT_PUBLIC_SMS_NEWS_API_URL` for API calls and `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` for Clerk browser auth. It also needs `CLERK_SECRET_KEY` for server-side Clerk helpers inside the Next.js app.
+The web workspace should use `NEXT_PUBLIC_SIPNEWS_API_URL` for API calls and `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` for Clerk browser auth. It also needs `CLERK_SECRET_KEY` for server-side Clerk helpers inside the Next.js app.
 
 ## packages/contracts
 

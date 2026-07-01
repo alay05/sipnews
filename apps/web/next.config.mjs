@@ -2,11 +2,11 @@ import path from "node:path";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["@sms-news/contracts"],
+  transpilePackages: ["@sipnews/contracts"],
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
-      "@sms-news/contracts": path.resolve("../../packages/contracts/src/index.ts")
+      "@sipnews/contracts": path.resolve("../../packages/contracts/src/index.ts")
     };
     return config;
   }

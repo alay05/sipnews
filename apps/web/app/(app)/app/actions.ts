@@ -7,7 +7,7 @@ import {
   onboardingPayloadSchema,
   summaryLengthSchema,
   userSettingsPayloadSchema
-} from "@sms-news/contracts";
+} from "@sipnews/contracts";
 import { createApiClient } from "@/lib/apiClient";
 
 export async function saveOnboardingAction(formData: FormData): Promise<void> {

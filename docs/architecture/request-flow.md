@@ -40,4 +40,4 @@ This is the implemented product/API flow after the worker cutover.
 ## API Base URLs
 
 - `PUBLIC_BASE_URL` is the externally reachable base URL used by the current runtime.
-- `NEXT_PUBLIC_SMS_NEWS_API_URL` is the web client's browser-visible API URL.
+- `NEXT_PUBLIC_SIPNEWS_API_URL` is the web client's browser-visible API URL.

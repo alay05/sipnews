@@ -45,13 +45,13 @@ Render cron uses UTC only.
 
 ## Render Account Steps
 
-1. Connect the GitHub repository to Render.
+1. Connect the GitHub repository for Sip to Render.
 2. In Render, create a new Blueprint from the repo, or create services manually using the values from `render.yaml`.
 3. Confirm the four services that Render detects:
-   - `sms-news-web`
-   - `sms-news-api`
-   - `sms-news-worker-prepare`
-   - `sms-news-worker-deliver`
+   - `sipnews-web`
+   - `sipnews-api`
+   - `sipnews-worker-prepare`
+   - `sipnews-worker-deliver`
 4. Set the environment variables for each service before the first deploy.
 5. Deploy the web and API services first.
 6. After the API is healthy, manually trigger the two cron services once from the Render dashboard.
@@ -82,9 +82,9 @@ Render cron uses UTC only.
 1. Use the pooled or direct production connection string from Neon.
 2. Ensure every `DATABASE_URL` uses `sslmode=verify-full`.
 3. Put that URL in:
-   - `sms-news-api`
-   - `sms-news-worker-prepare`
-   - `sms-news-worker-deliver`
+   - `sipnews-api`
+   - `sipnews-worker-prepare`
+   - `sipnews-worker-deliver`
 4. Run the schema reset and first-user seed locally before the first production deploy if you want the exact same starting state.
 5. Once deployed, do not run `db:setup` against production unless you intentionally want a full wipe.
 

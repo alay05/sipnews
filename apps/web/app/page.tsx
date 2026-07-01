@@ -12,7 +12,7 @@ export default function LandingPage() {
     <main>
       <header className="page-shell landing-header">
         <Link className="brand" href="/">
-          SMS News
+          Sip
         </Link>
         <nav className="landing-nav" aria-label="Primary">
           <SignedOut>
@@ -41,7 +41,7 @@ export default function LandingPage() {
       <section className="page-shell hero">
         <div className="hero-copy">
           <p className="eyebrow">Private daily news briefings</p>
-          <h1>SMS News</h1>
+          <h1>Sip</h1>
           <p>
             Configure a concise digest, review past sends, and keep noisy feeds
             out of your day.

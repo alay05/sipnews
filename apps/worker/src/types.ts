@@ -1,9 +1,9 @@
-import type { RawArticle, SourceConfig, StoryCluster } from "@sms-news/core";
+import type { RawArticle, SourceConfig, StoryCluster } from "@sipnews/core";
 import type {
   ClusterSummary,
   ClusterSummaryVariant,
   DigestRecord
-} from "@sms-news/data";
+} from "@sipnews/data";
 
 export interface SourceAdapter {
   fetch(source: SourceConfig): Promise<RawArticle[]>;

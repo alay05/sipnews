@@ -8,15 +8,15 @@ export default defineConfig({
   resolve: {
     alias: [
       {
-        find: "@sms-news/contracts",
+        find: "@sipnews/contracts",
         replacement: path.join(rootDir, "packages/contracts/src/index.ts")
       },
       {
-        find: "@sms-news/core",
+        find: "@sipnews/core",
         replacement: path.join(rootDir, "packages/core/src/index.ts")
       },
       {
-        find: "@sms-news/data",
+        find: "@sipnews/data",
         replacement: path.join(rootDir, "packages/data/src/index.ts")
       }
     ]

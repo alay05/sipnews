@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { z } from "zod";
-import type { SourceConfig } from "@sms-news/core";
+import type { SourceConfig } from "@sipnews/core";
 
 const sourceSchema = z.object({
   id: z.string().min(1),

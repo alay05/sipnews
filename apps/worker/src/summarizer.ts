@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import type { StoryCluster } from "@sms-news/core";
+import type { StoryCluster } from "@sipnews/core";
 import type { ClusterSummaryDraft, ClusterSummarizer } from "./types.js";
 
 export class OpenAIClusterSummarizer implements ClusterSummarizer {

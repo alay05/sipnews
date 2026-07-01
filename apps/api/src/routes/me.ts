@@ -11,7 +11,7 @@ import {
   onboardingStateDtoSchema,
   userSettingsDtoSchema,
   userSettingsPayloadSchema
-} from "@sms-news/contracts";
+} from "@sipnews/contracts";
 import type {
   DigestDetailDto,
   DigestItemDto,
@@ -22,8 +22,8 @@ import type {
   OnboardingStateDto,
   UserSettingsDto,
   UserSettingsPayload
-} from "@sms-news/contracts";
-import type { CategoryCountMap, DataUser, DigestRecord, UserDigestSettings } from "@sms-news/data";
+} from "@sipnews/contracts";
+import type { CategoryCountMap, DataUser, DigestRecord, UserDigestSettings } from "@sipnews/data";
 import type { AuthenticatedRequest } from "../auth/clerk.js";
 import type { ProductDataAccess } from "../services/productData.js";
 import { digestCreatedAt, digestLocalDate, digestSentAt } from "../services/productData.js";

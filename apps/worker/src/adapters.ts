@@ -1,5 +1,5 @@
 import Parser from "rss-parser";
-import type { RawArticle, SourceConfig } from "@sms-news/core";
+import type { RawArticle, SourceConfig } from "@sipnews/core";
 import type { SourceAdapter } from "./types.js";
 
 type FeedItem = Parser.Item & {

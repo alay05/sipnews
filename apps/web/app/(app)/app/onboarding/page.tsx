@@ -1,4 +1,4 @@
-import { summaryLengths } from "@sms-news/contracts";
+import { summaryLengths } from "@sipnews/contracts";
 import { saveOnboardingAction } from "../actions";
 import { createApiClient } from "@/lib/apiClient";
 import { getOptionalAuthToken } from "@/lib/authToken";

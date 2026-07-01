@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { RawArticle, SourceConfig, StoryCluster } from "@sms-news/core";
+import type { RawArticle, SourceConfig, StoryCluster } from "@sipnews/core";
 import {
   createInMemoryRepositories,
   InMemoryContentRepository,
   InMemoryRunRepository,
   type DataRepositories,
   type DigestRecord
-} from "@sms-news/data";
+} from "@sipnews/data";
 import { BucketedWorkerPipeline } from "./pipeline.js";
 import type {
   ClusterSummaryDraft,
