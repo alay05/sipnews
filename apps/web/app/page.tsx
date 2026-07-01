@@ -1,4 +1,10 @@
-import { SignedIn, SignedOut, SignInButton, SignUpButton } from "@clerk/nextjs";
+import {
+  SignedIn,
+  SignedOut,
+  SignInButton,
+  SignUpButton,
+  UserButton
+} from "@clerk/nextjs";
 import Link from "next/link";
 
 export default function LandingPage() {
@@ -22,9 +28,12 @@ export default function LandingPage() {
             </SignUpButton>
           </SignedOut>
           <SignedIn>
-            <Link className="button" href="/app" prefetch={false}>
-              Open app
-            </Link>
+            <>
+              <Link className="button" href="/app" prefetch={false}>
+                Open app
+              </Link>
+              <UserButton afterSignOutUrl="/" />
+            </>
           </SignedIn>
         </nav>
       </header>
@@ -51,9 +60,12 @@ export default function LandingPage() {
               </SignInButton>
             </SignedOut>
             <SignedIn>
-              <Link className="button" href="/app" prefetch={false}>
-                Go to digest history
-              </Link>
+              <>
+                <Link className="button" href="/app" prefetch={false}>
+                  Go to digest history
+                </Link>
+                <UserButton afterSignOutUrl="/" />
+              </>
             </SignedIn>
           </div>
         </div>
