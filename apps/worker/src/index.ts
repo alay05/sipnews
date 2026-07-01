@@ -72,10 +72,3 @@ function workerMode(value: string | undefined): "run" | "prepare" | "deliver" {
   if (value === "prepare" || value === "deliver") return value;
   return "run";
 }
-
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  });
-}

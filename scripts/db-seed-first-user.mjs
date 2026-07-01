@@ -6,14 +6,11 @@ if (!databaseUrl) {
   throw new Error("DATABASE_URL is required");
 }
 
-const email = process.env.FIRST_USER_EMAIL ?? process.env.DIGEST_EMAIL_TO ?? "andrewlay05@gmail.com";
-const displayName = process.env.FIRST_USER_DISPLAY_NAME ?? process.env.PERSONAL_DISPLAY_NAME ?? "Andrew";
-const timezone = process.env.FIRST_USER_TIMEZONE ?? process.env.PERSONAL_TIMEZONE ?? "America/New_York";
-const sendHour = Number.parseInt(process.env.FIRST_USER_SEND_HOUR ?? process.env.DIGEST_SEND_HOUR ?? "7", 10);
-const digestMaxItems = Number.parseInt(
-  process.env.FIRST_USER_DIGEST_MAX_ITEMS ?? process.env.DIGEST_MAX_ITEMS ?? "10",
-  10
-);
+const email = process.env.FIRST_USER_EMAIL ?? "andrewlay05@gmail.com";
+const displayName = process.env.FIRST_USER_DISPLAY_NAME ?? "Andrew";
+const timezone = process.env.FIRST_USER_TIMEZONE ?? "America/New_York";
+const sendHour = Number.parseInt(process.env.FIRST_USER_SEND_HOUR ?? "7", 10);
+const digestMaxItems = Number.parseInt(process.env.FIRST_USER_DIGEST_MAX_ITEMS ?? "10", 10);
 const summaryLength = process.env.FIRST_USER_SUMMARY_LENGTH ?? "medium";
 const categoryCounts = parseCounts(
   process.env.FIRST_USER_CATEGORY_COUNTS ?? "world=2,tech=4,ai=3,startups=1",

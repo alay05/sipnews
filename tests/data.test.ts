@@ -1,11 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-  createInMemoryRepositories,
-  legacySingleUserBackfillSql,
-  seedDevUser
-} from "@sms-news/data";
+import { createInMemoryRepositories, seedDevUser } from "@sms-news/data";
 import type {
   ClusterSummary,
   ClusterSummaryVariant,
@@ -114,11 +110,6 @@ describe("data repositories", () => {
     ).resolves.toMatchObject({ id: "digest-b" });
   });
 
-  it("escapes generated legacy seed SQL", () => {
-    expect(
-      legacySingleUserBackfillSql({ email: "o'hara@example.com" })
-    ).toContain("'o''hara@example.com'");
-  });
 });
 
 describe("canonical schema", () => {
