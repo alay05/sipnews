@@ -73,7 +73,7 @@ services:
       - key: SUMMARY_PROMPT_VERSION
         value: worker-v1
       - key: SOURCES_CONFIG_PATH
-        value: ../../config/sources.json
+        value: ../../config/sources.example.json
       - key: SOURCE_FETCH_TIMEOUT_MS
         value: "15000"
       - key: MAX_ARTICLE_AGE_DAYS
@@ -113,7 +113,7 @@ services:
       - key: SUMMARY_PROMPT_VERSION
         value: worker-v1
       - key: SOURCES_CONFIG_PATH
-        value: ../../config/sources.json
+        value: ../../config/sources.example.json
       - key: SOURCE_FETCH_TIMEOUT_MS
         value: "15000"
       - key: MAX_ARTICLE_AGE_DAYS

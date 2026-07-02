@@ -1,36 +1,44 @@
 # Sip
 
-Sip is a TypeScript monorepo for an AI-curated email news digest. The current system has three deployed runtimes:
+Sip is a TypeScript monorepo for an AI-curated email news digest.
 
-- `apps/web`: Next.js account UI with Clerk auth
-- `apps/api`: Express API for onboarding, settings, digest history, and feedback
-- `apps/worker`: scheduled bucketed digest worker
+Current deployed runtimes:
+
+- `apps/web`: Next.js + Clerk user app
+- `apps/api`: Express API for onboarding, settings, digests, and feedback
+- `apps/worker`: scheduled digest preparation and delivery
+
+Current production domains:
+
+- web: `https://www.sipnewstoday.com`
+- api: `https://api.sipnewstoday.com`
 
 ## Repo Layout
 
 ```text
 apps/api/            Express API
-apps/web/            Next.js + Clerk account UI
-apps/worker/         Scheduled digest pipeline
-packages/contracts/  Shared DTO and validation schemas
-packages/core/       Pure digest logic: normalize, dedupe, rank, buckets
+apps/web/            Next.js + Clerk app
+apps/worker/         Scheduled digest worker
+packages/contracts/  Shared DTOs and validation
+packages/core/       Pure digest logic
 packages/data/       Repositories and Postgres access
 config/              Worker source configuration
 migrations/          Postgres schema
-scripts/             DB setup/reset helpers
-render.yaml          Render blueprint for web/api/cron services
-docs/                Architecture and deployment notes
+scripts/             DB reset and seed helpers
+render.yaml          Render blueprint
+docs/                Architecture, deployment, operations
+roadmap_july2.md     Forward roadmap and work breakdown
 ```
 
 ## Local Setup
 
-Install dependencies from the repository root:
+Install dependencies:
 
 ```sh
 npm install
 ```
 
-Create local config files:
+Create local env and config files:
 
 ```sh
 cp apps/api/.env.example apps/api/.env
@@ -39,7 +47,7 @@ cp apps/web/.env.example apps/web/.env
 cp config/sources.example.json config/sources.json
 ```
 
-Create a root `.env` for first-user database seeding:
+Create a root `.env` for the first-user seed script:
 
 ```env
 DATABASE_URL=postgresql://...&sslmode=verify-full
@@ -52,10 +60,15 @@ FIRST_USER_SUMMARY_LENGTH=medium
 FIRST_USER_CATEGORY_COUNTS=world=2,tech=4,ai=3,startups=1
 ```
 
-Recommended local startup:
+Reset and seed the local database:
 
 ```sh
 npm run db:setup
+```
+
+Start local services:
+
+```sh
 npm run dev -w @sipnews/api
 npm run dev -w @sipnews/web -- --port 3001
 ```
@@ -67,18 +80,7 @@ npm run worker:prepare
 npm run worker:deliver
 ```
 
-## Environment Files
-
-- `apps/api/.env`: `DATABASE_URL`, Clerk verification, API allowlist
-- `apps/worker/.env`: database, OpenAI, SendGrid, Guardian, source config
-- `apps/web/.env`: Clerk browser config and API base URL
-- root `.env`: one-time first-user seed values only
-
-Use `sslmode=verify-full` in every Postgres `DATABASE_URL`.
-
-## Product API
-
-Authenticated routes:
+## Core API Routes
 
 - `GET /health`
 - `GET /v1/me`
@@ -90,33 +92,18 @@ Authenticated routes:
 - `GET /v1/me/digests/:id`
 - `POST /v1/me/feedback`
 
-The API provisions a generalized internal user record from Clerk identity, persists user digest settings, and serves digest history from Postgres.
-
 ## Worker Model
 
-The worker does not summarize per user. It:
+The worker uses shared assets, not per-user summarization:
 
-1. Fetches and deduplicates stories once per run
-2. Builds shared story clusters
-3. Creates one canonical cluster summary
-4. Stores `small`, `medium`, and `large` variants
-5. Assembles each user digest from the shared pool based on category counts and summary length
+1. Fetch sources once
+2. Normalize and dedupe articles
+3. Build shared story clusters
+4. Generate canonical summaries
+5. Store `small`, `medium`, and `large` variants
+6. Assemble each user digest from the shared cluster pool
 
-This is the active bucketed/shared-summary backend model.
-
-## Render
-
-This repo includes a Render blueprint at [render.yaml](/Users/andrewlay/sipnews/render.yaml).
-
-Deployment notes:
-
-- Use repo-root build commands, not `rootDir: apps/...`
-- Render cron schedules are UTC, not timezone-aware
-- `worker:prepare` is configured for `0 9 * * *` in the blueprint, which is `4:00 AM` Eastern during standard time and drifts by one hour during daylight saving time
-
-See [docs/deployment/render.md](/Users/andrewlay/sipnews/docs/deployment/render.md) for the full account-by-account setup checklist.
-
-## Useful Commands
+## Key Commands
 
 ```sh
 npm run build
@@ -128,3 +115,12 @@ npm run build:worker
 npm run run:worker:prepare
 npm run run:worker:deliver
 ```
+
+## Documentation
+
+- [docs/architecture/system.md](/Users/andrewlay/sipnews/docs/architecture/system.md)
+- [docs/architecture/data-model.md](/Users/andrewlay/sipnews/docs/architecture/data-model.md)
+- [docs/deployment/environments.md](/Users/andrewlay/sipnews/docs/deployment/environments.md)
+- [docs/deployment/render.md](/Users/andrewlay/sipnews/docs/deployment/render.md)
+- [docs/operations/runbook.md](/Users/andrewlay/sipnews/docs/operations/runbook.md)
+- [roadmap_july2.md](/Users/andrewlay/sipnews/roadmap_july2.md)
