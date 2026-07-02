@@ -32,12 +32,6 @@ roadmap_july2.md     Forward roadmap and work breakdown
 
 ## Local Setup
 
-Install dependencies:
-
-```sh
-npm install
-```
-
 Create local env and config files:
 
 ```sh
@@ -47,7 +41,13 @@ cp apps/web/.env.example apps/web/.env
 cp config/sources.example.json config/sources.json
 ```
 
-Create a root `.env` for the first-user seed script:
+Install dependencies and validate the workspace env files:
+
+```sh
+npm run setup
+```
+
+Create a root `.env` only if you plan to run the first-user seed script:
 
 ```env
 DATABASE_URL=postgresql://...&sslmode=verify-full
@@ -69,8 +69,8 @@ npm run db:setup
 Start local services:
 
 ```sh
-npm run dev -w @sipnews/api
-npm run dev -w @sipnews/web -- --port 3001
+npm run dev:api
+npm run dev:web
 ```
 
 Manual worker runs:
@@ -106,20 +106,32 @@ The worker uses shared assets, not per-user summarization:
 ## Key Commands
 
 ```sh
+npm run env:check
+npm run verify:fast
+npm run verify
+npm run test:unit
 npm run build
 npm run typecheck
-npm test
 npm run build:web
 npm run build:api
 npm run build:worker
+npm run dev:api
+npm run dev:web
+npm run dev:worker
 npm run run:worker:prepare
 npm run run:worker:deliver
 ```
 
 ## Documentation
 
+- [AGENTS.md](/Users/andrewlay/sipnews/AGENTS.md)
+- [.codex/config.toml](/Users/andrewlay/sipnews/.codex/config.toml)
+- [.codex/skills/sipnews-cross-runtime-change/SKILL.md](/Users/andrewlay/sipnews/.codex/skills/sipnews-cross-runtime-change/SKILL.md)
 - [docs/architecture/system.md](/Users/andrewlay/sipnews/docs/architecture/system.md)
 - [docs/architecture/data-model.md](/Users/andrewlay/sipnews/docs/architecture/data-model.md)
+- [docs/agents/architecture.md](/Users/andrewlay/sipnews/docs/agents/architecture.md)
+- [docs/agents/change-playbook.md](/Users/andrewlay/sipnews/docs/agents/change-playbook.md)
+- [docs/agents/verification.md](/Users/andrewlay/sipnews/docs/agents/verification.md)
 - [docs/deployment/environments.md](/Users/andrewlay/sipnews/docs/deployment/environments.md)
 - [docs/deployment/render.md](/Users/andrewlay/sipnews/docs/deployment/render.md)
 - [docs/operations/runbook.md](/Users/andrewlay/sipnews/docs/operations/runbook.md)

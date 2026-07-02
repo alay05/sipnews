@@ -21,6 +21,12 @@ Do not use a narrowed `rootDir` like `apps/web`. The build depends on the root w
 - worker prepare: `npm run run:worker:prepare`
 - worker deliver: `npm run run:worker:deliver`
 
+## Auto Deploy
+
+- `sipnews-web`: Render dashboard is set to auto deploy only after CI passes.
+- `sipnews-api`: Render dashboard is set to auto deploy only after CI passes.
+- `render.yaml` does not currently pin this setting, so keep the dashboard values aligned if services are recreated.
+
 ## Current Schedules
 
 - prepare: `0 9 * * *`

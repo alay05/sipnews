@@ -1,0 +1,11 @@
+# Project-scoped Codex configuration for the Sipnews monorepo.
+#
+# Use AGENTS.md for workflow and engineering guidance.
+# Use this file only for repo-local Codex behavior that should travel with the repo.
+
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+project_doc_max_bytes = 65536
+model_reasoning_effort = "medium"
+plan_mode_reasoning_effort = "high"
+model_verbosity = "low"
