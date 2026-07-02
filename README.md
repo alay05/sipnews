@@ -38,8 +38,23 @@ Create local env and config files:
 cp apps/api/.env.example apps/api/.env
 cp apps/worker/.env.example apps/worker/.env
 cp apps/web/.env.example apps/web/.env
-cp config/sources.example.json config/sources.json
 ```
+
+`config/sources.json` is the committed production-safe default source config for both local and
+production workers. Create a local-only override only if you need different sources during
+development:
+
+```sh
+cp config/sources.example.json config/sources.local.json
+```
+
+If you create `config/sources.local.json`, point `apps/worker/.env` `SOURCES_CONFIG_PATH` at
+`../../config/sources.local.json`. Otherwise leave it on the default
+`../../config/sources.json`.
+
+Local API and worker `.env` files must point at a dev-only Postgres database. Do not reuse the
+Render production `DATABASE_URL` for local runs. Use a separate Neon project or a separate
+database such as `sipnews_dev`.
 
 Install dependencies and validate the workspace env files:
 
@@ -47,10 +62,13 @@ Install dependencies and validate the workspace env files:
 npm run setup
 ```
 
-Create a root `.env` only if you plan to run the first-user seed script:
+Create a root `.env` only if you plan to run the first-user seed script. It should point at the
+same dev-only database as `apps/api/.env` and `apps/worker/.env`:
 
 ```env
-DATABASE_URL=postgresql://...&sslmode=verify-full
+DATABASE_URL=postgresql://.../sipnews_dev?sslmode=require
+DATABASE_ENV=development
+DATABASE_RESET_ALLOWED=true
 FIRST_USER_EMAIL=andrewlay05@gmail.com
 FIRST_USER_DISPLAY_NAME=Andrew
 FIRST_USER_TIMEZONE=America/New_York
@@ -65,6 +83,9 @@ Reset and seed the local database:
 ```sh
 npm run db:setup
 ```
+
+`npm run db:setup` is intentionally blocked unless the root `.env` includes both
+`DATABASE_ENV=development` and `DATABASE_RESET_ALLOWED=true`.
 
 Start local services:
 
@@ -133,6 +154,7 @@ npm run run:worker:deliver
 - [docs/agents/change-playbook.md](/Users/andrewlay/sipnews/docs/agents/change-playbook.md)
 - [docs/agents/verification.md](/Users/andrewlay/sipnews/docs/agents/verification.md)
 - [docs/deployment/environments.md](/Users/andrewlay/sipnews/docs/deployment/environments.md)
+- [docs/deployment/release-workflow.md](/Users/andrewlay/sipnews/docs/deployment/release-workflow.md)
 - [docs/deployment/render.md](/Users/andrewlay/sipnews/docs/deployment/render.md)
 - [docs/operations/runbook.md](/Users/andrewlay/sipnews/docs/operations/runbook.md)
 - [roadmap_july2.md](/Users/andrewlay/sipnews/roadmap_july2.md)

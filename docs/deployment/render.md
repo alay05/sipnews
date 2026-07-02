@@ -56,13 +56,16 @@ Note: Render cron is UTC-only. `0 9 * * *` is not fixed to `4:00 AM New York` ye
 - `CLERK_JWT_AUDIENCE=` if unused
 - `ALLOWED_USER_EMAILS=andrewlay05@gmail.com`
 
+Production Render services do not use the local-only `DATABASE_ENV` or `DATABASE_RESET_ALLOWED`
+flags. Those guardrails exist only for local development and destructive bootstrap scripts.
+
 ### `sipnews-worker-prepare`
 
 - `DATABASE_URL`
 - `OPENAI_API_KEY`
 - `OPENAI_MODEL=gpt-4.1-mini`
 - `SUMMARY_PROMPT_VERSION=worker-v1`
-- `SOURCES_CONFIG_PATH=../../config/sources.example.json`
+- `SOURCES_CONFIG_PATH=../../config/sources.json`
 - `SOURCE_FETCH_TIMEOUT_MS=15000`
 - `MAX_ARTICLE_AGE_DAYS=7`
 - `SENDGRID_API_KEY`
@@ -83,6 +86,8 @@ Current desired behavior:
 
 - `sipnewstoday.com` redirects to `www.sipnewstoday.com`
 
-## Current Production Lesson
+## Source Config
 
-Render cannot read local-only `config/sources.json`. Production workers should use the committed `config/sources.example.json` unless a committed production source file is introduced later.
+Production workers should point at the committed `config/sources.json` default. Do not point Render
+at `config/sources.local.json`; that file is reserved for optional local development overrides and
+is intentionally uncommitted.

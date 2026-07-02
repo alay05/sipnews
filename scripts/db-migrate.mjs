@@ -8,6 +8,10 @@ if (!databaseUrl) {
   throw new Error("DATABASE_URL is required");
 }
 
+if (process.env.DATABASE_ENV !== "development") {
+  throw new Error("db:migrate only supports DATABASE_ENV=development");
+}
+
 const version = "001_init.sql";
 const pool = new Pool({ connectionString: databaseUrl });
 

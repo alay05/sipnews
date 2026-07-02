@@ -4,13 +4,18 @@ import path from "node:path";
 const repoRoot = process.cwd();
 const mode = process.argv[2] ?? "local";
 const workerEnvPath = "apps/worker/.env";
+const defaultWorkerSourcesPath = "../../config/sources.json";
+const localWorkerSourcesOverridePath = "../../config/sources.local.json";
 
 const modes = {
   api: {
     files: [
       {
         path: "apps/api/.env",
-        requiredKeys: ["DATABASE_URL", "CLERK_JWT_ISSUER"]
+        requiredKeys: ["DATABASE_URL", "DATABASE_ENV", "CLERK_JWT_ISSUER"],
+        expectedValues: {
+          DATABASE_ENV: "development"
+        }
       }
     ]
   },
@@ -28,22 +33,26 @@ const modes = {
         path: workerEnvPath,
         requiredKeys: [
           "DATABASE_URL",
+          "DATABASE_ENV",
           "OPENAI_API_KEY",
           "SENDGRID_API_KEY",
           "DIGEST_EMAIL_FROM"
-        ]
+        ],
+        expectedValues: {
+          DATABASE_ENV: "development"
+        }
       }
     ]
-  },
-  "worker-runtime": {
-    files: [],
-    envKeys: ["DATABASE_URL", "OPENAI_API_KEY", "SENDGRID_API_KEY", "DIGEST_EMAIL_FROM"]
   },
   seed: {
     files: [
       {
         path: ".env",
-        requiredKeys: ["DATABASE_URL"]
+        requiredKeys: ["DATABASE_URL", "DATABASE_ENV", "DATABASE_RESET_ALLOWED"],
+        expectedValues: {
+          DATABASE_ENV: "development",
+          DATABASE_RESET_ALLOWED: "true"
+        }
       }
     ]
   },
@@ -51,7 +60,10 @@ const modes = {
     files: [
       {
         path: "apps/api/.env",
-        requiredKeys: ["DATABASE_URL", "CLERK_JWT_ISSUER"]
+        requiredKeys: ["DATABASE_URL", "DATABASE_ENV", "CLERK_JWT_ISSUER"],
+        expectedValues: {
+          DATABASE_ENV: "development"
+        }
       },
       {
         path: "apps/web/.env",
@@ -61,12 +73,20 @@ const modes = {
         path: workerEnvPath,
         requiredKeys: [
           "DATABASE_URL",
+          "DATABASE_ENV",
           "OPENAI_API_KEY",
           "SENDGRID_API_KEY",
           "DIGEST_EMAIL_FROM"
-        ]
+        ],
+        expectedValues: {
+          DATABASE_ENV: "development"
+        }
       }
     ]
+  },
+  "worker-runtime": {
+    files: [],
+    envKeys: ["DATABASE_URL", "OPENAI_API_KEY", "SENDGRID_API_KEY", "DIGEST_EMAIL_FROM"]
   }
 };
 
@@ -102,6 +122,18 @@ for (const file of modes[mode].files) {
   for (const key of file.requiredKeys) {
     if (!envValues[key]) {
       failures.push(`Missing ${key} in ${file.path}`);
+    }
+  }
+
+  for (const [key, expectedValue] of Object.entries(file.expectedValues ?? {})) {
+    if (!envValues[key]) {
+      continue;
+    }
+
+    if (envValues[key] !== expectedValue) {
+      failures.push(
+        `Expected ${key}=${expectedValue} in ${file.path}; received ${envValues[key]}`
+      );
     }
   }
 }
@@ -144,24 +176,37 @@ function parseEnvFile(content) {
 
 function validateWorkerSourcesPath(failures) {
   let workerSourcesPath = process.env.SOURCES_CONFIG_PATH;
+  let sourcesPathOrigin = "process environment";
 
   if (!workerSourcesPath) {
     const workerEnvAbsolutePath = path.join(repoRoot, workerEnvPath);
-    if (!existsSync(workerEnvAbsolutePath)) {
-      failures.push(`Missing ${workerEnvPath} and SOURCES_CONFIG_PATH in process environment`);
-      return;
+    if (existsSync(workerEnvAbsolutePath)) {
+      const workerEnv = parseEnvFile(readFileSync(workerEnvAbsolutePath, "utf8"));
+      workerSourcesPath = workerEnv.SOURCES_CONFIG_PATH;
+      if (workerSourcesPath) {
+        sourcesPathOrigin = `${workerEnvPath} SOURCES_CONFIG_PATH`;
+      }
     }
+  }
 
-    const workerEnv = parseEnvFile(readFileSync(workerEnvAbsolutePath, "utf8"));
-    workerSourcesPath = workerEnv.SOURCES_CONFIG_PATH ?? "../../config/sources.json";
+  if (!workerSourcesPath) {
+    workerSourcesPath = defaultWorkerSourcesPath;
+    sourcesPathOrigin = `default ${defaultWorkerSourcesPath}`;
   }
 
   const resolvedSourcesPath = path.resolve(repoRoot, "apps/worker", workerSourcesPath);
   const displayPath = path.relative(repoRoot, resolvedSourcesPath);
 
   if (!existsSync(resolvedSourcesPath)) {
+    if (workerSourcesPath === localWorkerSourcesOverridePath) {
+      failures.push(
+        `Missing optional local override ${displayPath} referenced by ${sourcesPathOrigin}. Copy config/sources.example.json to config/sources.local.json or switch SOURCES_CONFIG_PATH back to ${defaultWorkerSourcesPath}.`
+      );
+      return;
+    }
+
     failures.push(
-      `Missing worker sources file ${displayPath} referenced by ${workerEnvPath} SOURCES_CONFIG_PATH`
+      `Missing worker sources file ${displayPath} referenced by ${sourcesPathOrigin}. Expected the committed default config/sources.json or another explicit SOURCES_CONFIG_PATH value.`
     );
   }
 }

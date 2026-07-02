@@ -29,4 +29,4 @@
 
 - Update the owning `.env.example`.
 - Update `README.md` if setup steps or required values changed.
-- Update `config/sources.example.json` and `config/sources.json` expectations if source config shape changes.
+- Update `config/sources.json`, `config/sources.example.json`, and any `config/sources.local.json` override expectations if source config behavior changes.

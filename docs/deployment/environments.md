@@ -21,6 +21,8 @@ Separate:
 - local worker runs manually
 - local or dev-only Postgres database
 - Clerk development instance
+- local `apps/api/.env` and `apps/worker/.env` must set `DATABASE_ENV=development`
+- root `.env` is seed-only and should point at the same dev-only database with `DATABASE_RESET_ALLOWED=true`
 
 ### Production
 
@@ -30,20 +32,15 @@ Separate:
 - production Postgres database
 - Clerk production instance
 
-## Branching Recommendation
+## Release Workflow
 
-Use:
+Branching and merge policy are documented in [docs/deployment/release-workflow.md](/Users/andrewlay/sipnews/docs/deployment/release-workflow.md).
 
-- `main` for production-ready code
-- short-lived feature branches off `main`
+Current recommendation:
 
-Recommended branch naming:
-
-- `feat/r2-1-onboarding-flow`
-- `fix/r1-2-render-env-defaults`
-- `chore/r4-1-doc-cleanup`
-
-Do not add a long-lived `develop` branch yet. It adds overhead without solving the main current problem. First separate the environments and databases. If you later add a real staging environment, then consider a dedicated `staging` branch.
+- keep `main` as the only long-lived branch
+- use short-lived branches off `main`
+- do not add a long-lived `develop` branch yet
 
 ## Database Recommendation
 
@@ -53,25 +50,13 @@ Target state:
 
 - local/dev database for experimentation and destructive resets
 - production database for live users only
+- local app and worker runs reject DB configs that are not explicitly marked `DATABASE_ENV=development`
+- `db:setup` requires an explicit `DATABASE_RESET_ALLOWED=true` acknowledgement before it drops and reseeds anything
 
 Never run `db:setup` against production after the initial clean bootstrap unless you intentionally want a wipe.
 
-## Testing and Push Flow
+## Verification And Promotion
 
-Recommended flow:
+Use the local verification and merge checklist in [docs/deployment/release-workflow.md](/Users/andrewlay/sipnews/docs/deployment/release-workflow.md).
 
-1. branch from `main`
-2. work locally against dev/local database
-3. run:
-   - `npm run typecheck`
-   - `npm test`
-4. manually validate affected runtime paths
-5. merge to `main`
-6. deploy to production
-
-If staging is added later:
-
-1. branch from `main`
-2. merge into `staging`
-3. deploy to staging services and staging database
-4. promote to `main`
+If a real staging environment is added later, the release workflow can expand to include a staging promotion step. That is intentionally out of scope for the current repo state.

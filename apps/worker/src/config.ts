@@ -17,6 +17,8 @@ const sourcesFileSchema = z.object({
   sources: z.array(sourceSchema)
 });
 
+const defaultSourcesConfigPath = "../../config/sources.json";
+
 export interface WorkerEnv {
   databaseUrl: string;
   sourcesConfigPath: string;
@@ -37,7 +39,7 @@ export function loadWorkerEnv(env: NodeJS.ProcessEnv = process.env): WorkerEnv {
   const openAiApiKey = requiredValue(env.OPENAI_API_KEY, "OPENAI_API_KEY");
   return {
     databaseUrl,
-    sourcesConfigPath: env.SOURCES_CONFIG_PATH ?? "config/sources.json",
+    sourcesConfigPath: env.SOURCES_CONFIG_PATH ?? defaultSourcesConfigPath,
     publicBaseUrl: env.PUBLIC_BASE_URL ?? "http://localhost:3000",
     emailFrom,
     sendgridApiKey,

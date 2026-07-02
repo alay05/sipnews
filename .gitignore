@@ -3,6 +3,6 @@ dist/
 apps/*/.next/
 *.tsbuildinfo
 .env
-config/sources.json
+config/sources.local.json
 *.log
 .DS_Store

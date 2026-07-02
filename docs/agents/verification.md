@@ -1,5 +1,7 @@
 # Verification Guide
 
+For the branch, merge, and release checklist, use [docs/deployment/release-workflow.md](/Users/andrewlay/sipnews/docs/deployment/release-workflow.md). This guide stays focused on picking the right verification commands.
+
 ## Default Checks
 
 - `npm run verify:fast`: default check for most code edits.
@@ -28,4 +30,4 @@
 
 - Root `npm test` covers root tests only.
 - `npm run test:unit` is the canonical unit test entrypoint because it also runs worker tests.
-- `npm run db:setup` mutates the configured database and requires a root `.env`.
+- `npm run db:setup` mutates the configured database and requires a root `.env` with `DATABASE_ENV=development` and `DATABASE_RESET_ALLOWED=true`.

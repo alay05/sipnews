@@ -6,6 +6,14 @@ if (!databaseUrl) {
   throw new Error("DATABASE_URL is required");
 }
 
+if (process.env.DATABASE_ENV !== "development") {
+  throw new Error("db:seed:first-user only supports DATABASE_ENV=development");
+}
+
+if (process.env.DATABASE_RESET_ALLOWED !== "true") {
+  throw new Error("db:seed:first-user requires DATABASE_RESET_ALLOWED=true");
+}
+
 const email = process.env.FIRST_USER_EMAIL ?? "andrewlay05@gmail.com";
 const displayName = process.env.FIRST_USER_DISPLAY_NAME ?? "Andrew";
 const timezone = process.env.FIRST_USER_TIMEZONE ?? "America/New_York";

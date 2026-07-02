@@ -1,0 +1,209 @@
+{
+  "sources": [
+    {
+      "id": "bbc-world",
+      "name": "BBC World News",
+      "type": "rss",
+      "url": "https://feeds.bbci.co.uk/news/world/rss.xml",
+      "enabled": true,
+      "priority": 0.75,
+      "topics": ["general", "world", "general_world_us"]
+    },
+    {
+      "id": "bbc-us-canada",
+      "name": "BBC US & Canada",
+      "type": "rss",
+      "url": "https://feeds.bbci.co.uk/news/world/us_and_canada/rss.xml",
+      "enabled": true,
+      "priority": 0.7,
+      "topics": ["general", "us", "general_world_us"]
+    },
+    {
+      "id": "guardian-world",
+      "name": "The Guardian World",
+      "type": "guardian",
+      "enabled": true,
+      "priority": 0.72,
+      "topics": ["general", "world", "general_world_us"],
+      "config": {
+        "apiKeyEnv": "THE_GUARDIAN_API_KEY",
+        "section": "world",
+        "pageSize": 15,
+        "showFields": "trailText,bodyText,byline"
+      }
+    },
+    {
+      "id": "gdelt-major-us-world",
+      "name": "GDELT Major US/World Discovery",
+      "type": "gdelt",
+      "enabled": true,
+      "priority": 0.55,
+      "topics": ["general", "world", "us", "general_world_us", "discovery"],
+      "config": {
+        "query": "(\"United States\" OR world OR geopolitics)",
+        "domains": ["reuters.com", "apnews.com", "npr.org", "nytimes.com", "bbc.com"],
+        "maxRecords": 20,
+        "timespan": "24h"
+      }
+    },
+    {
+      "id": "the-verge",
+      "name": "The Verge",
+      "type": "rss",
+      "url": "https://www.theverge.com/rss/index.xml",
+      "enabled": true,
+      "priority": 0.95,
+      "topics": ["tech", "tech_industry", "platforms", "consumer_tech"]
+    },
+    {
+      "id": "ars-technica",
+      "name": "Ars Technica",
+      "type": "rss",
+      "url": "https://feeds.arstechnica.com/arstechnica/index",
+      "enabled": true,
+      "priority": 0.9,
+      "topics": ["tech", "tech_industry", "security", "science"]
+    },
+    {
+      "id": "ars-security",
+      "name": "Ars Technica Security",
+      "type": "rss",
+      "url": "https://arstechnica.com/security/feed/",
+      "enabled": true,
+      "priority": 0.82,
+      "topics": ["tech", "tech_industry", "security", "cybersecurity"]
+    },
+    {
+      "id": "wired-top",
+      "name": "WIRED Top Stories",
+      "type": "rss",
+      "url": "https://www.wired.com/feed/rss",
+      "enabled": true,
+      "priority": 0.82,
+      "topics": ["tech", "tech_industry", "business", "security"]
+    },
+    {
+      "id": "techcrunch-main",
+      "name": "TechCrunch",
+      "type": "rss",
+      "url": "https://techcrunch.com/feed/",
+      "enabled": true,
+      "priority": 0.9,
+      "topics": ["tech", "tech_industry", "venture"]
+    },
+    {
+      "id": "guardian-technology",
+      "name": "The Guardian Technology",
+      "type": "guardian",
+      "enabled": true,
+      "priority": 0.65,
+      "topics": ["tech", "tech_industry", "policy"],
+      "config": {
+        "apiKeyEnv": "THE_GUARDIAN_API_KEY",
+        "section": "technology",
+        "pageSize": 15,
+        "showFields": "trailText,bodyText,byline"
+      }
+    },
+    {
+      "id": "openai-news",
+      "name": "OpenAI News",
+      "type": "rss",
+      "url": "https://openai.com/news/rss.xml",
+      "enabled": true,
+      "priority": 1,
+      "topics": ["ai", "ai_dev_programming", "ai_tools", "models"]
+    },
+    {
+      "id": "anthropic-news-gdelt",
+      "name": "Anthropic News Discovery",
+      "type": "gdelt",
+      "enabled": true,
+      "priority": 0.95,
+      "topics": ["ai", "ai_dev_programming", "ai_tools", "models", "discovery"],
+      "config": {
+        "query": "(Claude OR Anthropic)",
+        "domain": "anthropic.com",
+        "maxRecords": 10,
+        "timespan": "7d"
+      }
+    },
+    {
+      "id": "deepmind-news-gdelt",
+      "name": "Google DeepMind Discovery",
+      "type": "gdelt",
+      "enabled": true,
+      "priority": 0.92,
+      "topics": ["ai", "ai_dev_programming", "research", "models", "discovery"],
+      "config": {
+        "query": "(Gemini OR DeepMind OR \"Google AI\")",
+        "domains": ["deepmind.google", "blog.google"],
+        "maxRecords": 10,
+        "timespan": "7d"
+      }
+    },
+    {
+      "id": "github-ai-ml",
+      "name": "GitHub AI & ML Blog",
+      "type": "rss",
+      "url": "https://github.blog/ai-and-ml/feed/",
+      "enabled": true,
+      "priority": 0.88,
+      "topics": ["ai", "ai_dev_programming", "developer_tools", "github"]
+    },
+    {
+      "id": "simon-willison",
+      "name": "Simon Willison's Weblog",
+      "type": "rss",
+      "url": "https://simonwillison.net/atom/everything/",
+      "enabled": true,
+      "priority": 0.92,
+      "topics": ["ai", "ai_dev_programming", "programming", "llms"]
+    },
+    {
+      "id": "hacker-news-ai-dev",
+      "name": "Hacker News AI/Dev Signal",
+      "type": "rss",
+      "url": "https://hnrss.org/newest?q=AI%20OR%20LLM%20OR%20programming%20OR%20developer%20tools&points=50",
+      "enabled": true,
+      "priority": 0.85,
+      "topics": ["ai", "ai_dev_programming", "programming", "developer_tools", "discussion"]
+    },
+    {
+      "id": "yc-blog",
+      "name": "Y Combinator Blog",
+      "type": "rss",
+      "url": "https://www.ycombinator.com/blog/rss",
+      "enabled": true,
+      "priority": 0.78,
+      "topics": ["startups", "founders", "venture"]
+    },
+    {
+      "id": "product-hunt",
+      "name": "Product Hunt",
+      "type": "rss",
+      "url": "https://www.producthunt.com/feed",
+      "enabled": true,
+      "priority": 0.82,
+      "topics": ["startups", "ai_tools", "developer_tools", "products"]
+    },
+    {
+      "id": "crunchbase-news",
+      "name": "Crunchbase News",
+      "type": "rss",
+      "url": "https://news.crunchbase.com/feed/",
+      "enabled": true,
+      "priority": 0.75,
+      "topics": ["startups", "venture", "funding"]
+    },
+    {
+      "id": "techcrunch-startups",
+      "name": "TechCrunch Startups",
+      "type": "rss",
+      "url": "https://techcrunch.com/category/startups/feed/",
+      "enabled": true,
+      "priority": 0.84,
+      "topics": ["startups", "venture"]
+    }
+  ]
+}
