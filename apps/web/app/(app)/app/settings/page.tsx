@@ -20,46 +20,48 @@ export default async function SettingsPage() {
       </header>
 
       <form action={saveSettingsAction} className="form-grid">
-        <section className="form-section">
-          <h2>Account</h2>
-          <div className="field">
-            <label htmlFor="email">Email</label>
-            <input id="email" value={settings.email ?? ""} readOnly disabled />
-          </div>
-          <div className="field">
-            <label htmlFor="displayName">Display name</label>
-            <input
-              id="displayName"
-              name="displayName"
-              defaultValue={settings.displayName ?? ""}
-              placeholder="Your name"
-            />
-          </div>
-          <label className="checkbox-row">
-            <input type="checkbox" name="isActive" defaultChecked={settings.isActive} />
-            <span>Receive future digests</span>
-          </label>
-        </section>
+        <div className="form-grid form-grid-two">
+          <section className="form-section">
+            <h2>Account</h2>
+            <div className="field">
+              <label htmlFor="email">Email</label>
+              <input id="email" value={settings.email ?? ""} readOnly disabled />
+            </div>
+            <div className="field">
+              <label htmlFor="displayName">Display name</label>
+              <input
+                id="displayName"
+                name="displayName"
+                defaultValue={settings.displayName ?? ""}
+                placeholder="Your name"
+              />
+            </div>
+            <label className="checkbox-row">
+              <input type="checkbox" name="isActive" defaultChecked={settings.isActive} />
+              <span>Receive future digests</span>
+            </label>
+          </section>
 
-        <section className="form-section">
-          <h2>Schedule</h2>
-          <div className="field-grid">
-            <div className="field">
-              <label htmlFor="timezone">Timezone</label>
-              <input id="timezone" name="timezone" defaultValue={settings.timezone} />
+          <section className="form-section">
+            <h2>Schedule</h2>
+            <div className="field-grid">
+              <div className="field">
+                <label htmlFor="timezone">Timezone</label>
+                <input id="timezone" name="timezone" defaultValue={settings.timezone} />
+              </div>
+              <div className="field">
+                <label htmlFor="sendHour">Local delivery hour</label>
+                <select id="sendHour" name="sendHour" defaultValue={String(settings.sendHour)}>
+                  {Array.from({ length: 24 }, (_, hour) => (
+                    <option key={hour} value={hour}>
+                      {hour.toString().padStart(2, "0")}:00
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div className="field">
-              <label htmlFor="sendHour">Local delivery hour</label>
-              <select id="sendHour" name="sendHour" defaultValue={String(settings.sendHour)}>
-                {Array.from({ length: 24 }, (_, hour) => (
-                  <option key={hour} value={hour}>
-                    {hour.toString().padStart(2, "0")}:00
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </section>
+          </section>
+        </div>
 
         <section className="form-section">
           <h2>Digest preferences</h2>
@@ -84,20 +86,22 @@ export default async function SettingsPage() {
             </div>
           </div>
           <div className="field">
-            <span>Summary length</span>
-            <div className="checkbox-grid">
-              {summaryLengths.map((length) => (
-                <label key={length} className="checkbox-row">
-                  <input
-                    type="radio"
-                    name="summaryLength"
-                    value={length}
-                    defaultChecked={settings.summaryLength === length}
-                  />
-                  <span>{labelForSummaryLength(length)}</span>
-                </label>
-              ))}
-            </div>
+            <fieldset className="fieldset-reset">
+              <legend>Summary length</legend>
+              <div className="checkbox-grid">
+                {summaryLengths.map((length) => (
+                  <label key={length} className="checkbox-row">
+                    <input
+                      type="radio"
+                      name="summaryLength"
+                      value={length}
+                      defaultChecked={settings.summaryLength === length}
+                    />
+                    <span>{labelForSummaryLength(length)}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
           </div>
         </section>
 

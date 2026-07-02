@@ -14,6 +14,7 @@ export default function LandingPage() {
         <Link className="brand" href="/">
           Sip
         </Link>
+        <span className="paper-meta">A handmade daily paper for the web</span>
         <nav className="landing-nav" aria-label="Primary">
           <SignedOut>
             <SignInButton mode="redirect">
@@ -40,41 +41,52 @@ export default function LandingPage() {
 
       <section className="page-shell hero">
         <div className="hero-copy">
-          <p className="eyebrow">Private daily news briefings</p>
-          <h1>Sip</h1>
-          <p>
-            Configure a concise digest, review past sends, and keep noisy feeds
-            out of your day.
-          </p>
-          <div className="hero-actions">
-            <SignedOut>
-              <SignUpButton mode="redirect">
-                <button className="button" type="button">
-                  Create account
-                </button>
-              </SignUpButton>
-              <SignInButton mode="redirect">
-                <button className="button secondary" type="button">
-                  Sign in
-                </button>
-              </SignInButton>
-            </SignedOut>
-            <SignedIn>
-              <>
-                <Link className="button" href="/app" prefetch={false}>
-                  Go to digest history
-                </Link>
-                <UserButton afterSignOutUrl="/" />
-              </>
-            </SignedIn>
+          <div>
+            <p className="eyebrow">Private daily news briefings</p>
+            <span className="hero-ribbon">Paper collage edition</span>
+            <h1>Read a smaller, better front page.</h1>
+            <p>
+              Configure a concise digest, review past sends, and keep noisy feeds
+              out of your day. The interface is built to feel like a hand-assembled
+              morning paper rather than another bright SaaS dashboard.
+            </p>
+          </div>
+          <div>
+            <div className="hero-actions">
+              <SignedOut>
+                <SignUpButton mode="redirect">
+                  <button className="button" type="button">
+                    Create account
+                  </button>
+                </SignUpButton>
+                <SignInButton mode="redirect">
+                  <button className="button secondary" type="button">
+                    Sign in
+                  </button>
+                </SignInButton>
+              </SignedOut>
+              <SignedIn>
+                <>
+                  <Link className="button" href="/app" prefetch={false}>
+                    Open workspace
+                  </Link>
+                  <UserButton afterSignOutUrl="/" />
+                </>
+              </SignedIn>
+            </div>
+            <div className="hero-cutout" aria-hidden="true">
+              <div className="hero-cutout-art" />
+              <div className="hero-stamp">Morning Edition</div>
+            </div>
           </div>
         </div>
 
-        <div className="digest-preview panel" aria-label="Digest preview">
+        <div className="hero-feature digest-preview panel" aria-label="Digest preview">
           <div className="preview-header">
-            <span>Today</span>
+            <span>Today’s clipped brief</span>
             <strong>7 stories</strong>
           </div>
+          <div className="cutout-card" aria-hidden="true" />
           <ol>
             <li>
               <span>Local</span>
@@ -94,6 +106,7 @@ export default function LandingPage() {
 
       <section className="page-shell feature-band" aria-label="Product focus">
         <div>
+          <p className="eyebrow">Existing pages only</p>
           <h2>Built for setup, review, and adjustment.</h2>
           <p className="muted">
             This web shell is ready for onboarding preferences, delivery

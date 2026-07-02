@@ -6,20 +6,25 @@ export default function SignUpPage() {
   return (
     <main className="page-shell auth-page">
       <section className="auth-copy">
-        <Link className="brand" href="/">
-          Sip
-        </Link>
-        <p className="eyebrow">Email magic link setup</p>
-        <h1>Create account</h1>
-        <p className="muted">
-          Use email-first authentication, then finish digest preferences in
-          onboarding.
-        </p>
-        <div className="auth-links">
-          <span className="muted">Already configured?</span>
-          <Link className="button secondary" href="/sign-in">
-            Sign in
+        <div>
+          <Link className="brand" href="/">
+            Sip
           </Link>
+          <p className="eyebrow">Email magic link setup</p>
+          <h1>Create account</h1>
+          <p className="muted">
+            Use email-first authentication, then finish digest preferences in
+            onboarding.
+          </p>
+          <div className="auth-links">
+            <span className="muted">Already configured?</span>
+            <Link className="button secondary" href="/sign-in">
+              Sign in
+            </Link>
+          </div>
+        </div>
+        <div className="auth-cutout">
+          <div className="cutout-card" aria-hidden="true" />
         </div>
       </section>
 

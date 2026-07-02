@@ -8,6 +8,7 @@ export function AppNav() {
       <Link className="brand" href="/app" prefetch={false}>
         Sip
       </Link>
+      <span className="paper-meta">Private digest workspace</span>
       <nav className="app-nav" aria-label="Application">
         <Link href="/app/digests" prefetch={false}>
           Digests
