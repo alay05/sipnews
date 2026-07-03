@@ -8,65 +8,55 @@ This roadmap is the current work breakdown after production launch. Use the IDs 
 - Clerk production auth works
 - shared-cluster digest backend works
 - email delivery works
-- current biggest gaps are environment separation, user flows, source hardening, and product polish
+- local development now uses a separate Neon development branch and no local process points at production DB by default
+- committed worker source config defaults and release workflow docs are in place
+- current biggest gaps are migration hardening, user flows, source hardening, product polish, and operations
 
-## 1. Environment Separation And Release Discipline
+## 1. Completed Since Launch
 
 ### 1.1 Separate Development Database
 
-Goal:
+Completed:
 
-- stop sharing one database between local/dev and production
-
-Deliverables:
-
-- separate Neon project or separate database for development
-- updated local env templates and setup docs
-- no local process points at production DB by default
-
-Agent output:
-
-- env var changes
-- docs update
-- validation steps
+- created a separate Neon development branch from production for local/dev use
+- updated local env conventions and validation to require explicit development DB usage
+- local bootstrap/reset flow now requires explicit development-only acknowledgement
+- verified local checks against the new dev DB setup
 
 ### 1.2 Separate Development And Production Source Config
 
-Goal:
+Completed:
 
-- make source configuration explicit per environment
-
-Deliverables:
-
-- committed production-safe default source config
-- optional local override path for development
-- Render blueprint and local docs aligned
-
-Dependencies:
-
-- none
+- committed `config/sources.json` as the production-safe default source config
+- added `config/sources.local.json` as the optional local-only override path
+- aligned worker defaults, env validation, Render blueprint, and docs around the new config contract
 
 ### 1.3 Release Workflow
 
+Completed:
+
+- documented the release workflow in `docs/deployment/release-workflow.md`
+- standardized branch naming around short-lived `feat/*`, `fix/*`, and `chore/*` branches
+- documented verification expectations and merge requirements
+
+## 2. Immediate Foundations
+
+These items should happen before the deeper product and polish work.
+
+### 2.1 Development Pipeline And Environment Separation Follow-Through
+
 Goal:
 
-- establish a clear test-before-push workflow
-
-Recommendation:
-
-- keep `main` as the only long-lived branch for now
-- use short-lived feature branches off `main`
-- do not add a long-lived `develop` branch yet
+- finish the remaining dev/prod separation and release-discipline decisions beyond the initial local safety work
 
 Deliverables:
 
-- documented branch naming
-- documented local verification checklist
-- documented merge requirements
+- explicit decision on whether to stay `main`-only or introduce a real dev/staging branch later
+- documented promotion path across local development, Neon dev branch usage, and production deploys
+- cleanup of any remaining docs or env assumptions that still blur development and production responsibilities
+- confirmation of how future development data, smoke tests, and deploy validation should work without touching production
 
-## 2. Database And Migration Hardening
-
-### 2.1 Replace Destructive Migration Flow
+### 2.2 Replace Destructive Migration Flow
 
 Goal:
 
@@ -80,9 +70,9 @@ Deliverables:
 
 Dependencies:
 
-- 1.1
+- completed local/dev database separation
 
-### 2.2 First-User Seed Cleanup
+### 2.3 First-User Seed Cleanup
 
 Goal:
 
@@ -94,7 +84,36 @@ Deliverables:
 - no legacy variable fallbacks
 - docs for when the seed script should and should not be used
 
-## 3. Onboarding And Settings Product Work
+### 2.4 Operations And Observability
+
+Goal:
+
+- make production behavior easier to operate, debug, and review
+
+Deliverables:
+
+- alerting approach recommendation
+- runbook for prepare and deliver failures
+- clearer failure metadata
+- repeatable daily or weekly production admin check
+- digest success check
+- delivery run check
+- source health spot check
+
+### 2.5 Security And Access Review Follow-Through
+
+Goal:
+
+- tighten production defaults and finish the follow-through from the initial security/access review
+
+Deliverables:
+
+- review `ALLOWED_USER_EMAILS` removal plan
+- review secret placement by service
+- review production-only env usage
+- resolve env contract drift between code, docs, and Render where needed
+
+## 3. Onboarding And Shared-Bucket Product Logic
 
 ### 3.1 Complete Onboarding Flow
 
@@ -119,7 +138,7 @@ Deliverables:
 
 Dependencies:
 
-- 1.1 recommended
+- completed local/dev database separation
 
 ### 3.2 Complete Settings Flow
 
@@ -133,21 +152,7 @@ Deliverables:
 - cleaner category count controls
 - safer active/inactive controls
 
-### 3.3 Digest Detail UX
-
-Goal:
-
-- improve digest history usefulness
-
-Deliverables:
-
-- digest detail page
-- clearer delivered vs pending state
-- links and source visibility improvements
-
-## 4. Shared-Bucket Backend Hardening
-
-### 4.1 Bucket Assignment Review
+### 3.3 Bucket Assignment Review
 
 Goal:
 
@@ -159,7 +164,7 @@ Deliverables:
 - edge-case list
 - proposed adjustments if category leakage is found
 
-### 4.2 New User Mapping Policy
+### 3.4 New User Mapping Policy
 
 Goal:
 
@@ -172,7 +177,7 @@ Deliverables:
 - no “special first user” logic
 - documentation of how user settings map into shared prepared content
 
-### 4.3 Delivery Selection Diagnostics
+### 3.5 Delivery Selection Diagnostics
 
 Goal:
 
@@ -183,9 +188,9 @@ Deliverables:
 - structured selection logs
 - optional admin/debug view later
 
-## 5. Summary Quality And Prompt Work
+## 4. Summary Quality And Prompt Work
 
-### 5.1 Summary Length Tuning
+### 4.1 Summary Length Tuning
 
 Goal:
 
@@ -201,7 +206,7 @@ Deliverables:
 - variant-specific length targets
 - before/after examples
 
-### 5.2 Digest Assembly Quality
+### 4.2 Digest Assembly Quality
 
 Goal:
 
@@ -213,9 +218,9 @@ Deliverables:
 - duplicate-topic avoidance review
 - better title and body formatting
 
-## 6. Source Reliability
+## 5. Source Reliability
 
-### 6.1 GDELT Review
+### 5.1 GDELT Review
 
 Goal:
 
@@ -230,7 +235,7 @@ Deliverables:
 - keep / reduce / replace recommendation
 - production-safe default source set
 
-### 6.2 Source Tiering
+### 5.2 Source Tiering
 
 Goal:
 
@@ -242,7 +247,7 @@ Deliverables:
 - fallback policy
 - source health notes
 
-### 6.3 Additional Stable Sources
+### 5.3 Additional Stable Sources
 
 Goal:
 
@@ -253,9 +258,9 @@ Deliverables:
 - shortlist of stable sources per category
 - implementation plan
 
-## 7. Frontend Product Polish
+## 6. Frontend Product Polish
 
-### 7.1 Dashboard Upgrade
+### 6.1 Dashboard Upgrade
 
 Goal:
 
@@ -267,7 +272,7 @@ Deliverables:
 - clearer next delivery state
 - digest stats that matter
 
-### 7.2 Better Form Controls
+### 6.2 Better Form Controls
 
 Goal:
 
@@ -279,7 +284,19 @@ Deliverables:
 - cleaner summary length chooser
 - better validation feedback
 
-### 7.3 Public Landing Decisions
+### 6.3 Digest Detail UX
+
+Goal:
+
+- improve digest history usefulness
+
+Deliverables:
+
+- digest detail page
+- clearer delivered vs pending state
+- links and source visibility improvements
+
+### 6.4 Public Landing Decisions
 
 Goal:
 
@@ -289,84 +306,3 @@ Deliverables:
 
 - clear signed-out landing behavior
 - sign-in/sign-up routing review
-
-## 8. Operations And Observability
-
-### 8.1 Worker Monitoring
-
-Goal:
-
-- make failures easier to notice and debug
-
-Deliverables:
-
-- alerting approach recommendation
-- runbook for prepare and deliver failures
-- clearer failure metadata
-
-### 8.2 Production Admin Checks
-
-Goal:
-
-- create a repeatable daily or weekly operational check
-
-Deliverables:
-
-- digest success check
-- delivery run check
-- source health spot check
-
-### 8.3 Security And Access Review
-
-Goal:
-
-- tighten production defaults
-
-Deliverables:
-
-- review `ALLOWED_USER_EMAILS` removal plan
-- review secret placement by service
-- review production-only env usage
-
-## 9. Recommended Execution Order
-
-### Phase A: Safety And Separation
-
-- `1.1` separate development database
-- `1.3` release workflow
-- `2.1` migration hardening
-
-### Phase B: Core Product Flow
-
-- `3.1` complete onboarding
-- `3.2` complete settings
-- `7.2` better form controls
-
-### Phase C: Content Quality
-
-- `5.1` summary length tuning
-- `5.2` digest assembly quality
-- `6.1` GDELT review
-
-### Phase D: Scale And Operations
-
-- `4.2` new user mapping policy
-- `8.1` worker monitoring
-- `8.2` production admin checks
-
-## 10. Suggested Agent Splits
-
-- Agent A: `1.1`, `1.3`, `2.1`
-- Agent B: `3.1`, `3.2`, `7.2`
-- Agent C: `5.1`, `5.2`
-- Agent D: `6.1`, `6.2`, `6.3`
-- Agent E: `4.1`, `4.2`, `4.3`
-- Agent F: `8.1`, `8.2`, `8.3`
-
-## 11. Immediate Next Recommendation
-
-If choosing one thing next, do this:
-
-- `1.1` separate the development database from production
-
-That is the highest-leverage infrastructure improvement now that production is live.
