@@ -134,6 +134,9 @@ Store shared clusters, bucket memberships, and summary variants
 Assemble personalized digests -> Send via SendGrid -> Persist delivery state
 ```
 
+For a simpler visual explanation of the bucketed personalization system, see
+[bucket_architecture.md](bucket_architecture.md).
+
 ## Repository Layout
 
 ```text
@@ -308,6 +311,7 @@ fetched and summarized again.
 
 ## Documentation
 
+- [Bucket architecture](bucket_architecture.md)
 - [System architecture](docs/architecture/system.md)
 - [Data model](docs/architecture/data-model.md)
 - [Render deployment](docs/deployment/render.md)
