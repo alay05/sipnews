@@ -1,5 +1,13 @@
 # Render
 
+Render is production-only in the current repo model. Development does not run on Render; it runs
+locally against the dev-only database and Clerk development instance. There is no shared Render
+development or staging environment right now.
+
+SendGrid is different: it is used in both local development and production. Local
+`npm run worker:deliver` runs can send real email from your machine, while production delivery
+runs send through the Render `sipnews-worker-deliver` service.
+
 ## Services
 
 - `sipnews-web`
@@ -49,15 +57,14 @@ Note: Render cron is UTC-only. `0 9 * * *` is not fixed to `4:00 AM New York` ye
 ### `sipnews-api`
 
 - `PORT=10000`
-- `PUBLIC_BASE_URL=https://api.sipnewstoday.com`
 - `DATABASE_URL=postgresql://...sslmode=verify-full`
 - `CLERK_JWT_ISSUER=https://...`
 - `CLERK_SECRET_KEY=sk_live_...`
 - `CLERK_JWT_AUDIENCE=` if unused
-- `ALLOWED_USER_EMAILS=andrewlay05@gmail.com`
 
-Production Render services do not use the local-only `DATABASE_ENV` or `DATABASE_RESET_ALLOWED`
-flags. Those guardrails exist only for local development and destructive bootstrap scripts.
+Production Render services do not use the local-only `DATABASE_ENV`,
+`DATABASE_RESET_ALLOWED`, or `DATABASE_BOOTSTRAP_ALLOWED` flags. Those guardrails exist only for
+local development and destructive/bootstrap scripts.
 
 ### `sipnews-worker-prepare`
 
@@ -68,14 +75,38 @@ flags. Those guardrails exist only for local development and destructive bootstr
 - `SOURCES_CONFIG_PATH=../../config/sources.json`
 - `SOURCE_FETCH_TIMEOUT_MS=15000`
 - `MAX_ARTICLE_AGE_DAYS=7`
-- `SENDGRID_API_KEY`
-- `DIGEST_EMAIL_FROM`
-- `PUBLIC_BASE_URL=https://www.sipnewstoday.com`
 - `THE_GUARDIAN_API_KEY`
 
 ### `sipnews-worker-deliver`
 
-Use the same env vars and values as `sipnews-worker-prepare`.
+- `DATABASE_URL`
+- `SENDGRID_API_KEY`
+- `DIGEST_EMAIL_FROM`
+- `PUBLIC_BASE_URL=https://www.sipnewstoday.com`
+
+## Secret Placement
+
+- `sipnews-web`: Clerk browser publishable key plus `CLERK_SECRET_KEY` for server-rendered Clerk integration
+- `sipnews-api`: database connection plus Clerk JWT verification and Clerk secret for email resolution fallback
+- `sipnews-worker-prepare`: database plus source-fetch/summarization secrets only
+- `sipnews-worker-deliver`: database plus delivery secrets only, including SendGrid
+
+Keep worker secrets split by mode. Do not add `SENDGRID_API_KEY` to prepare or `OPENAI_API_KEY` to deliver unless the runtime behavior changes again.
+
+## Access Control
+
+`ALLOWED_USER_EMAILS` has been removed from the API contract. Production sign-up and access gating
+should live in Clerk configuration and product user activation, not in a temporary API env
+allowlist.
+
+## Alerting Recommendation
+
+Current recommendation:
+
+- use Render service alerts for deploy failures, cron job failures, and repeated restart behavior
+- use SendGrid provider alerts for delivery-provider issues
+- treat source degradation as an ops review item using `npm run ops:report`, not a paging event, unless prepare runs start failing outright
+- page on prepare or deliver run failures; use non-paging review for partial-content or degraded-source warnings
 
 ## Domains
 
