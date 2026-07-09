@@ -23,6 +23,19 @@
 - Prefer adding a repo-local skill only when the workflow is specialized or repetitive enough that `AGENTS.md` would become noisy.
 - Project `.codex/*` config and skills are expected to load only when Codex trusts this repository.
 
+## Branch And Git Workflow
+
+- `development` is the default working branch for ongoing coding work.
+- `main` is the production release branch and should only receive release promotions from `development`.
+- Normal branch flow is `feature branch -> development -> main`.
+- Unless the user explicitly asks for direct work on another branch, prefer starting from `development`.
+- Simple or small isolated work can be done directly on `development`.
+- For non-trivial code changes, prefer a short-lived branch such as `feat/*`, `fix/*`, or `chore/*`, then merge back into `development`.
+- Treat pull requests into `development` as normal integration work and pull requests from `development` into `main` as release PRs.
+- Do not merge unfinished feature work into `main`.
+- When asked to commit work, keep commits focused and coherent rather than mixing unrelated runtime, docs, and release-process changes together when a cleaner split is practical.
+- Before suggesting or performing release steps, use [docs/deployment/release-workflow.md](/Users/andrewlay/sipnews/docs/deployment/release-workflow.md).
+
 ## Canonical Commands
 
 - `npm run setup`: Install dependencies and confirm local env files are present.
