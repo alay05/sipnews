@@ -3,6 +3,7 @@ services:
     name: sipnews-web
     runtime: node
     plan: starter
+    autoDeployTrigger: checksPass
     buildCommand: npm install && npm run build:web
     startCommand: npm run start:web
     envVars:
@@ -30,6 +31,7 @@ services:
     name: sipnews-api
     runtime: node
     plan: starter
+    autoDeployTrigger: checksPass
     buildCommand: npm install && npm run build:api
     startCommand: npm run start:api
     healthCheckPath: /health
@@ -56,6 +58,7 @@ services:
     name: sipnews-worker-prepare
     runtime: node
     plan: starter
+    autoDeployTrigger: checksPass
     schedule: "0 9 * * *"
     buildCommand: npm install && npm run build:worker
     startCommand: npm run run:worker:prepare
@@ -90,6 +93,7 @@ services:
     name: sipnews-worker-deliver
     runtime: node
     plan: starter
+    autoDeployTrigger: checksPass
     schedule: "0 * * * *"
     buildCommand: npm install && npm run build:worker
     startCommand: npm run run:worker:deliver
