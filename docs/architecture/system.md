@@ -39,5 +39,5 @@
 ## Current Constraints
 
 - Render cron is UTC-only.
-- Local and production currently share one codebase but should not share databases going forward.
+- Local and production share one codebase but use separate databases and separate runtime env.
 - Source reliability varies by provider, especially GDELT.

@@ -1,116 +1,171 @@
 # Release Workflow
 
-Sipnews currently uses `main` as the only long-lived branch. Keep the release process lightweight: short-lived branches, local verification before merge, and no extra staging branch until the team has a real need for one.
+Sipnews uses:
 
-## Branch Strategy
+- `development` as the working integration branch
+- `main` as the production release branch
 
-- `main` is always the production branch.
-- Create short-lived branches from the current `main`.
-- Merge back into `main` after local verification and review.
-- Do not introduce a long-lived `develop` or `staging` branch for the current team size.
+## Branch Protection
 
-## Branch Naming
+Keep branch protection simple.
 
-Use a branch prefix that matches the kind of change:
+### `development`
 
-- `feat/<short-description>` for new behavior
-- `fix/<short-description>` for bug fixes
-- `chore/<short-description>` for maintenance, tooling, or docs-only cleanup
+- require pull requests before merge
+- require status checks to pass
+- do not require approvals
+- do not allow force pushes or deletion
 
-Keep names short, lowercase, and hyphenated.
+This keeps `development` easy to use while still protecting it from accidental direct edits.
 
-Examples:
+### `main`
 
-- `feat/onboarding-validation`
-- `fix/worker-timezone-selection`
-- `chore/release-doc-alignment`
+- require pull requests before merge
+- require status checks to pass
+- require the branch to be up to date before merge
+- require conversation resolution before merge
+- do not allow force pushes or deletion
 
-## Local Verification Before Merge
+This keeps releases into `main` explicit and clean.
 
-Run the smallest check that still covers the risk of the change.
+## Normal Flow
 
-### Most Code Changes
+Use this branch flow:
 
-Run:
+```text
+feature branch -> development -> main
+```
+
+Typical examples:
+
+- `feat/new-onboarding-copy -> development`
+- `fix/delivery-timezone-bug -> development`
+- `development -> main` when you want a production release
+
+## Feature To `development`
+
+1. Update `development`.
+
+```sh
+git checkout development
+git pull origin development
+```
+
+2. Create a feature branch if you are not working directly on `development`.
+
+```sh
+git checkout -b feat/short-name
+```
+
+3. Make your changes.
+
+4. Run the normal verification for the change.
+
+Most changes:
 
 ```sh
 npm run verify:fast
 ```
 
-This is the default pre-merge check for normal app or package edits.
-
-### Cross-Workspace Or Release-Sensitive Changes
-
-Run:
+If the change touches shared packages, env/config, migrations, deployment wiring, or multiple runtimes:
 
 ```sh
 npm run verify
+npm run env:check
 ```
 
-Use the full verification path when a change touches shared contracts, multiple runtimes, build wiring, or anything that could affect production deployment behavior.
-
-### Worker Behavior Changes
-
-Run:
+If the change touches worker behavior:
 
 ```sh
 npm run test:unit
 npm run verify:fast
 ```
 
-Worker tests are part of `test:unit`, and worker changes should keep that signal explicit even though `verify:fast` already includes it.
-
-### Env Or Source Config Changes
-
-Run:
+5. Commit and push.
 
 ```sh
+git add .
+git commit -m "feat: short description"
+git push -u origin feat/short-name
+```
+
+6. Open a pull request into `development`.
+
+- base: `development`
+- compare: your feature branch
+
+7. Merge the PR into `development`.
+
+Recommended merge style:
+
+- squash merge for feature branches into `development`
+
+## `development` To `main`
+
+Use this when `development` contains the exact release you want to ship.
+
+1. Update both branches locally.
+
+```sh
+git checkout development
+git pull origin development
+git checkout main
+git pull origin main
+git checkout development
+```
+
+2. Run release verification from `development`.
+
+```sh
+npm run verify
 npm run env:check
 ```
 
-Then run the affected runtime command if the change impacts startup or runtime configuration:
+If the release changes worker behavior:
 
-- `npm run dev:api`
-- `npm run dev:web`
-- `npm run dev:worker`
-- `npm run worker:prepare`
-- `npm run worker:deliver`
+```sh
+npm run test:unit
+```
 
-### Docs-Only Changes
+3. If needed, run a deeper local smoke test on development-only infrastructure.
 
-No code verification is required unless the docs change commands, setup steps, or operational instructions that should be re-checked.
+```sh
+npm run db:reset
+npm run db:bootstrap
+npm run dev:api
+npm run dev:web
+npm run worker:prepare
+npm run worker:deliver
+```
 
-## Manual Validation
+4. Open a pull request from `development` into `main`.
 
-After command-line verification, manually exercise the affected surface when practical.
+- base: `main`
+- compare: `development`
 
-Examples:
+5. If the release includes schema changes, run the production migration:
 
-- web UI or onboarding/settings flow changes: confirm the changed pages in the local app
-- API changes: hit the affected route or complete the user flow through the web app
-- worker changes: run the relevant worker path and confirm expected logs or persisted output
-- deployment or operational doc changes: confirm the documented command names and file paths still exist
+```sh
+npm run db:migrate
+```
 
-Use the deeper end-to-end smoke test in [docs/operations/runbook.md](/Users/andrewlay/sipnews/docs/operations/runbook.md) when a change needs higher confidence across web, API, worker, and delivery behavior. It is not required for every merge.
+Run that only against the production `DATABASE_URL`.
 
-## Merge Requirements For `main`
+For the migration rules, use [docs/deployment/database-migrations.md](/Users/andrewlay/sipnews/docs/deployment/database-migrations.md).
 
-Before merging into `main`, confirm all of the following:
+6. Merge the PR into `main`.
 
-1. The branch is up to date enough with `main` to merge cleanly.
-2. The required local verification for the change type has passed.
-3. The affected runtime or user flow has been manually checked when practical.
-4. Related documentation has been updated in the same change when behavior, setup, configuration, or operations changed.
-5. Another engineer has reviewed the change when one is available.
-6. The branch does not include unrelated work, debug code, or local-only config.
+Recommended merge style:
 
-## Merge And Release
+- merge commit for `development -> main`
 
-1. Branch from `main`.
-2. Implement the change on a short-lived branch.
-3. Run the required local verification for the change type.
-4. Review and merge into `main`.
-5. Let production deploy from `main`.
-6. Perform production verification when the change warrants it using [docs/operations/runbook.md](/Users/andrewlay/sipnews/docs/operations/runbook.md).
+7. Verify production after deploy.
 
-This keeps the current workflow aligned with the repo's actual deployment model without adding branch overhead that the team does not yet need.
+- open `https://www.sipnewstoday.com`
+- check `https://api.sipnewstoday.com/health`
+- inspect Render logs for the affected services
+- run the ops report if needed:
+
+```sh
+DATABASE_URL=postgresql://... npm run ops:report
+```

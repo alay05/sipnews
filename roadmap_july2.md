@@ -45,73 +45,47 @@ These items should happen before the deeper product and polish work.
 
 ### 2.1 Development Pipeline And Environment Separation Follow-Through
 
-Goal:
+Completed:
 
-- finish the remaining dev/prod separation and release-discipline decisions beyond the initial local safety work
-
-Deliverables:
-
-- explicit decision on whether to stay `main`-only or introduce a real dev/staging branch later
-- documented promotion path across local development, Neon dev branch usage, and production deploys
-- cleanup of any remaining docs or env assumptions that still blur development and production responsibilities
-- confirmation of how future development data, smoke tests, and deploy validation should work without touching production
+- confirmed `development` is the integration branch and `main` remains the production branch
+- documented the current promotion path across short-lived branches, local development, the dev-only Neon database, `development`, and Render production deploys
+- cleaned up stale docs that still implied the separate dev database was future work or that local/prod boundaries were still blurred
+- documented that destructive resets, seed flows, worker test deliveries, and deep smoke tests stay on development-only infrastructure rather than production
 
 ### 2.2 Replace Destructive Migration Flow
 
-Goal:
+Completed:
 
-- move beyond `db:setup` as the main schema management path
-
-Deliverables:
-
-- real forward-only migration process
-- separate bootstrap flow for a brand-new environment
-- documented production-safe migration procedure
-
-Dependencies:
-
-- completed local/dev database separation
+- replaced the destructive `db:migrate` reset logic with a forward-only migration runner over ordered `migrations/*.sql`
+- split destructive reset, schema migration, and first-user bootstrap into distinct commands: `db:reset`, `db:migrate`, and `db:bootstrap`
+- documented the production-safe migration procedure in `docs/deployment/database-migrations.md`
 
 ### 2.3 First-User Seed Cleanup
 
-Goal:
+Completed:
 
-- isolate one-time bootstrap logic from normal runtime operations
-
-Deliverables:
-
-- clear bootstrap-only seed script
-- no legacy variable fallbacks
-- docs for when the seed script should and should not be used
+- converted first-user seeding into a bootstrap-only upsert flow instead of a table-wiping reset helper
+- removed implicit `FIRST_USER_*` fallback values from the seed script and required explicit bootstrap inputs
+- cleaned up legacy seed naming in shared dev seed helpers
+- documented when to use `db:bootstrap` versus `db:migrate` or `db:reset`
 
 ### 2.4 Operations And Observability
 
-Goal:
+Completed:
 
-- make production behavior easier to operate, debug, and review
-
-Deliverables:
-
-- alerting approach recommendation
-- runbook for prepare and deliver failures
-- clearer failure metadata
-- repeatable daily or weekly production admin check
-- digest success check
-- delivery run check
-- source health spot check
+- added clearer worker failure metadata, including `failureStage`, structured source summaries, and persisted per-source ingestion results
+- documented an alerting recommendation and expanded the ops runbook for prepare failures, deliver failures, and source degradation
+- added `npm run ops:report` as a repeatable read-only production admin check for latest prepare, latest deliver, digest success, delivery failures, and source health
+- documented digest success, delivery run, and source health checks in the runbook
 
 ### 2.5 Security And Access Review Follow-Through
 
-Goal:
+Completed:
 
-- tighten production defaults and finish the follow-through from the initial security/access review
-
-Deliverables:
-
-- review `ALLOWED_USER_EMAILS` removal plan
-- review secret placement by service
-- review production-only env usage
-- resolve env contract drift between code, docs, and Render where needed
+- removed `ALLOWED_USER_EMAILS` from the API env contract, code path, and Render blueprint
+- split worker secret requirements by service so prepare no longer requires SendGrid secrets and deliver no longer requires OpenAI secrets
+- removed dead or drifting env contracts such as the unused API `PUBLIC_BASE_URL` and undocumented web `SIPNEWS_API_URL` override
+- aligned code, env examples, docs, and `render.yaml` around the current production contract
 
 ## 3. Onboarding And Shared-Bucket Product Logic
 

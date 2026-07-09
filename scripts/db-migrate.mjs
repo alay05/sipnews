@@ -1,38 +1,21 @@
 import "dotenv/config";
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import path from "node:path";
 import { Pool } from "pg";
+import { applyPendingMigrations, requireEnv } from "./db-lib.mjs";
 
-const databaseUrl = process.env.DATABASE_URL;
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL is required");
-}
-
-if (process.env.DATABASE_ENV !== "development") {
-  throw new Error("db:migrate only supports DATABASE_ENV=development");
-}
-
-const version = "001_init.sql";
+const databaseUrl = requireEnv("DATABASE_URL");
 const pool = new Pool({ connectionString: databaseUrl });
+const migrationsDirectory = path.join(process.cwd(), "migrations");
 
 try {
-  const sql = await readFile(join(process.cwd(), "migrations", version), "utf8");
-  await pool.query("BEGIN");
-  await pool.query(`DROP SCHEMA IF EXISTS public CASCADE`);
-  await pool.query(`CREATE SCHEMA public`);
-  await pool.query(`
-    CREATE TABLE schema_migrations (
-      version TEXT PRIMARY KEY,
-      applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
-    )
-  `);
-  await pool.query(sql);
-  await pool.query(`INSERT INTO schema_migrations (version) VALUES ($1)`, [version]);
-  await pool.query("COMMIT");
-  console.log(`[db:migrate] applied ${version}`);
-} catch (error) {
-  await pool.query("ROLLBACK").catch(() => {});
-  throw error;
+  const result = await applyPendingMigrations(pool, migrationsDirectory);
+  if (result.appliedVersions.length === 0) {
+    console.log("[db:migrate] no pending migrations");
+  } else {
+    for (const version of result.appliedVersions) {
+      console.log(`[db:migrate] applied ${version}`);
+    }
+  }
 } finally {
   await pool.end();
 }

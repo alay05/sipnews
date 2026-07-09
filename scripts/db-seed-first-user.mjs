@@ -1,54 +1,39 @@
 import "dotenv/config";
+import { createHash } from "node:crypto";
 import { Pool } from "pg";
+import { requireEnv, requireEnvValue } from "./db-lib.mjs";
 
-const databaseUrl = process.env.DATABASE_URL;
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL is required");
-}
+const databaseUrl = requireEnv("DATABASE_URL");
+requireEnvValue("DATABASE_ENV", "development");
+requireEnvValue("DATABASE_BOOTSTRAP_ALLOWED", "true");
 
-if (process.env.DATABASE_ENV !== "development") {
-  throw new Error("db:seed:first-user only supports DATABASE_ENV=development");
-}
-
-if (process.env.DATABASE_RESET_ALLOWED !== "true") {
-  throw new Error("db:seed:first-user requires DATABASE_RESET_ALLOWED=true");
-}
-
-const email = process.env.FIRST_USER_EMAIL ?? "andrewlay05@gmail.com";
-const displayName = process.env.FIRST_USER_DISPLAY_NAME ?? "Andrew";
-const timezone = process.env.FIRST_USER_TIMEZONE ?? "America/New_York";
-const sendHour = Number.parseInt(process.env.FIRST_USER_SEND_HOUR ?? "7", 10);
-const digestMaxItems = Number.parseInt(process.env.FIRST_USER_DIGEST_MAX_ITEMS ?? "10", 10);
-const summaryLength = process.env.FIRST_USER_SUMMARY_LENGTH ?? "medium";
-const categoryCounts = parseCounts(
-  process.env.FIRST_USER_CATEGORY_COUNTS ?? "world=2,tech=4,ai=3,startups=1",
-  digestMaxItems
-);
+const email = normalizeEmail(requireEnv("FIRST_USER_EMAIL"));
+const displayName = requireEnv("FIRST_USER_DISPLAY_NAME");
+const timezone = requireEnv("FIRST_USER_TIMEZONE");
+const sendHour = parseIntegerEnv("FIRST_USER_SEND_HOUR");
+const digestMaxItems = parseIntegerEnv("FIRST_USER_DIGEST_MAX_ITEMS");
+const summaryLength = parseSummaryLength(requireEnv("FIRST_USER_SUMMARY_LENGTH"));
+const categoryCounts = parseCounts(requireEnv("FIRST_USER_CATEGORY_COUNTS"), digestMaxItems);
 
 const pool = new Pool({ connectionString: databaseUrl });
 
 try {
   await pool.query("BEGIN");
-  await pool.query(`DELETE FROM delivery_runs`);
-  await pool.query(`DELETE FROM feedback_events`);
-  await pool.query(`DELETE FROM digest_items`);
-  await pool.query(`DELETE FROM digests`);
-  await pool.query(`DELETE FROM cluster_summary_variants`);
-  await pool.query(`DELETE FROM cluster_summaries`);
-  await pool.query(`DELETE FROM cluster_bucket_memberships`);
-  await pool.query(`DELETE FROM bucket_definitions`);
-  await pool.query(`DELETE FROM story_cluster_articles`);
-  await pool.query(`DELETE FROM story_clusters`);
-  await pool.query(`DELETE FROM articles`);
-  await pool.query(`DELETE FROM sources`);
-  await pool.query(`DELETE FROM user_digest_settings`);
-  await pool.query(`DELETE FROM users`);
+  const existingUserId = await findExistingUserIdByEmail(pool, email);
+  const userId = existingUserId ?? seededUserId(email);
 
   await pool.query(
     `INSERT INTO users (
       id, external_auth_provider, external_auth_subject, email, display_name, is_active
-    ) VALUES ($1, 'clerk', $2, $2, $3, true)`,
-    ["user_andrewlay05", email, displayName]
+    ) VALUES ($1, 'clerk', $2, $2, $3, true)
+    ON CONFLICT (id) DO UPDATE SET
+      external_auth_provider = EXCLUDED.external_auth_provider,
+      external_auth_subject = EXCLUDED.external_auth_subject,
+      email = EXCLUDED.email,
+      display_name = EXCLUDED.display_name,
+      is_active = EXCLUDED.is_active,
+      updated_at = now()`,
+    [userId, email, displayName]
   );
 
   await pool.query(
@@ -56,9 +41,22 @@ try {
       user_id, timezone, send_hour, digest_max_items, summary_length, delivery_channel,
       delivery_address, category_counts, source_weights, muted_sources, preferred_bucket_ids,
       include_bucket_labels
-    ) VALUES ($1, $2, $3, $4, $5, 'email', $6, $7::jsonb, '{}'::jsonb, '{}', '{}', true)`,
+    ) VALUES ($1, $2, $3, $4, $5, 'email', $6, $7::jsonb, '{}'::jsonb, '{}', '{}', true)
+    ON CONFLICT (user_id) DO UPDATE SET
+      timezone = EXCLUDED.timezone,
+      send_hour = EXCLUDED.send_hour,
+      digest_max_items = EXCLUDED.digest_max_items,
+      summary_length = EXCLUDED.summary_length,
+      delivery_channel = EXCLUDED.delivery_channel,
+      delivery_address = EXCLUDED.delivery_address,
+      category_counts = EXCLUDED.category_counts,
+      source_weights = EXCLUDED.source_weights,
+      muted_sources = EXCLUDED.muted_sources,
+      preferred_bucket_ids = EXCLUDED.preferred_bucket_ids,
+      include_bucket_labels = EXCLUDED.include_bucket_labels,
+      updated_at = now()`,
     [
-      "user_andrewlay05",
+      userId,
       timezone,
       sendHour,
       digestMaxItems,
@@ -75,6 +73,41 @@ try {
   throw error;
 } finally {
   await pool.end();
+}
+
+async function findExistingUserIdByEmail(pool, email) {
+  const result = await pool.query(
+    `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
+    [email]
+  );
+  return result.rows[0] ? String(result.rows[0].id) : undefined;
+}
+
+function seededUserId(email) {
+  return `user_${createHash("sha256").update(`seed:${email}`).digest("hex").slice(0, 16)}`;
+}
+
+function normalizeEmail(value) {
+  const email = value.trim().toLowerCase();
+  if (!email) {
+    throw new Error("FIRST_USER_EMAIL must not be empty");
+  }
+  return email;
+}
+
+function parseIntegerEnv(name) {
+  const parsed = Number.parseInt(requireEnv(name), 10);
+  if (!Number.isFinite(parsed)) {
+    throw new Error(`${name} must be an integer`);
+  }
+  return parsed;
+}
+
+function parseSummaryLength(value) {
+  if (value === "small" || value === "medium" || value === "large") {
+    return value;
+  }
+  throw new Error(`FIRST_USER_SUMMARY_LENGTH must be one of small, medium, large; received ${value}`);
 }
 
 function parseCounts(input, digestMaxItems) {

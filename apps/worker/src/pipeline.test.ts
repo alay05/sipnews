@@ -89,6 +89,43 @@ describe("BucketedWorkerPipeline", () => {
         expect.objectContaining({ channel: "email", status: "succeeded" })
       ])
     );
+    expect([...runs.ingestionRunSources.values()]).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          runId: result.ingestionRunId,
+          sourceId: "ai-feed",
+          status: "succeeded",
+          articlesSeen: 1,
+          articlesSaved: 1
+        }),
+        expect.objectContaining({
+          runId: result.ingestionRunId,
+          sourceId: "tech-feed",
+          status: "succeeded",
+          articlesSeen: 2,
+          articlesSaved: 2
+        }),
+        expect.objectContaining({
+          runId: result.ingestionRunId,
+          sourceId: "world-feed",
+          status: "succeeded",
+          articlesSeen: 1,
+          articlesSaved: 1
+        })
+      ])
+    );
+    expect(runs.ingestionRuns.get(result.ingestionRunId)?.metadata).toMatchObject({
+      mode: "prepare",
+      preparedClusters: 4,
+      sourceSummary: {
+        total: 3,
+        succeeded: 3,
+        failed: 0,
+        articlesSeen: 4,
+        articlesSaved: 4,
+        failedSources: []
+      }
+    });
     expect(deliveredDigests).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -139,16 +176,88 @@ describe("BucketedWorkerPipeline", () => {
     expect(result.digests).toHaveLength(0);
     expect(email.messages).toHaveLength(0);
   });
+
+  it("persists per-source failures and keeps prepare metadata clear when one source fails", async () => {
+    const repositories = createInMemoryRepositories();
+    await seedDueEmailUser(repositories, {
+      id: "user-1",
+      email: "user@example.com"
+    });
+
+    const adapter = new FakeSourceAdapter({
+      "working-feed": [rawArticle("working-feed", "Working Feed", "AI model release", ["ai"])],
+      "failing-feed": new Error("rate limited by upstream")
+    });
+
+    const result = await new BucketedWorkerPipeline({
+      repositories,
+      sources: [
+        source("working-feed", "Working Feed", ["ai"]),
+        source("failing-feed", "Failing Feed", ["tech"])
+      ],
+      adapterForSource: () => adapter,
+      summarizer: new FakeSummarizer(),
+      emailClient: new FakeEmailClient(),
+      emailFrom: "digest@example.com",
+      publicBaseUrl: "https://digest.example",
+      now: new Date("2026-06-30T12:00:00Z")
+    }).prepare();
+
+    const runs = repositories.runs as InMemoryRunRepository;
+
+    expect(result).toMatchObject({
+      articlesSeen: 1,
+      articlesSaved: 1,
+      clustersTouched: 1
+    });
+    expect(runs.ingestionRunSources.get(`${result.ingestionRunId}:working-feed`)).toMatchObject({
+      runId: result.ingestionRunId,
+      sourceId: "working-feed",
+      status: "succeeded",
+      articlesSeen: 1,
+      articlesSaved: 1
+    });
+    expect(runs.ingestionRunSources.get(`${result.ingestionRunId}:failing-feed`)).toMatchObject({
+      runId: result.ingestionRunId,
+      sourceId: "failing-feed",
+      status: "failed",
+      articlesSeen: 0,
+      articlesSaved: 0,
+      errorMessage: "rate limited by upstream"
+    });
+    expect(runs.ingestionRuns.get(result.ingestionRunId)?.metadata).toMatchObject({
+      mode: "prepare",
+      preparedClusters: 1,
+      sourceSummary: {
+        total: 2,
+        succeeded: 1,
+        failed: 1,
+        articlesSeen: 1,
+        articlesSaved: 1,
+        failedSources: [
+          {
+            sourceId: "failing-feed",
+            sourceName: "Failing Feed",
+            errorMessage: "rate limited by upstream"
+          }
+        ]
+      }
+    });
+  });
 });
 
 class FakeSourceAdapter implements SourceAdapter {
   readonly fetchCounts: Record<string, number> = {};
 
-  constructor(private readonly articlesBySourceId: Record<string, RawArticle[]>) {}
+  constructor(
+    private readonly responsesBySourceId: Record<string, RawArticle[] | Error>
+  ) {}
 
   async fetch(source: SourceConfig): Promise<RawArticle[]> {
     this.fetchCounts[source.id] = (this.fetchCounts[source.id] ?? 0) + 1;
-    return this.articlesBySourceId[source.id] ?? [];
+    const response = this.responsesBySourceId[source.id];
+    if (response instanceof Error) throw response;
+    return response ?? [];
   }
 }
 

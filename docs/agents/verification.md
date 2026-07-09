@@ -30,4 +30,5 @@ For the branch, merge, and release checklist, use [docs/deployment/release-workf
 
 - Root `npm test` covers root tests only.
 - `npm run test:unit` is the canonical unit test entrypoint because it also runs worker tests.
-- `npm run db:setup` mutates the configured database and requires a root `.env` with `DATABASE_ENV=development` and `DATABASE_RESET_ALLOWED=true`.
+- `npm run db:reset` mutates the configured database and requires a root `.env` with `DATABASE_ENV=development` and `DATABASE_RESET_ALLOWED=true`.
+- `npm run db:bootstrap` requires a root `.env` with `DATABASE_ENV=development`, `DATABASE_BOOTSTRAP_ALLOWED=true`, and the explicit `FIRST_USER_*` bootstrap values.

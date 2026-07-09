@@ -5,7 +5,7 @@ export const DEV_USER_ID = "dev-user";
 export const DEV_AUTH_PROVIDER = "dev";
 export const DEV_AUTH_SUBJECT = "local";
 
-export interface LegacySingleUserSeedInput {
+export interface DevSeedUserInput {
   userId?: string;
   email?: string;
   displayName?: string;
@@ -18,7 +18,7 @@ export interface LegacySingleUserSeedInput {
   categoryCounts?: Partial<CategoryCountMap>;
 }
 
-export function devUser(input: LegacySingleUserSeedInput = {}): DataUser {
+export function devUser(input: DevSeedUserInput = {}): DataUser {
   return {
     id: input.userId ?? DEV_USER_ID,
     externalAuthProvider: DEV_AUTH_PROVIDER,
@@ -30,7 +30,7 @@ export function devUser(input: LegacySingleUserSeedInput = {}): DataUser {
 }
 
 export function devDigestSettings(
-  input: LegacySingleUserSeedInput = {}
+  input: DevSeedUserInput = {}
 ): UserDigestSettings {
   const digestMaxItems = input.digestMaxItems ?? 5;
   const categoryCounts = normalizeCategoryCounts(input.categoryCounts, digestMaxItems);
@@ -52,7 +52,7 @@ export function devDigestSettings(
 
 export async function seedDevUser(
   repositories: Pick<DataRepositories, "users">,
-  input: LegacySingleUserSeedInput = {}
+  input: DevSeedUserInput = {}
 ): Promise<DataUser> {
   const user = devUser(input);
   await repositories.users.upsertUser(user);

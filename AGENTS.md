@@ -23,6 +23,19 @@
 - Prefer adding a repo-local skill only when the workflow is specialized or repetitive enough that `AGENTS.md` would become noisy.
 - Project `.codex/*` config and skills are expected to load only when Codex trusts this repository.
 
+## Branch And Git Workflow
+
+- `development` is the default working branch for ongoing coding work.
+- `main` is the production release branch and should only receive release promotions from `development`.
+- Normal branch flow is `feature branch -> development -> main`.
+- Unless the user explicitly asks for direct work on another branch, prefer starting from `development`.
+- Simple or small isolated work can be done directly on `development`.
+- For non-trivial code changes, prefer a short-lived branch such as `feat/*`, `fix/*`, or `chore/*`, then merge back into `development`.
+- Treat pull requests into `development` as normal integration work and pull requests from `development` into `main` as release PRs.
+- Do not merge unfinished feature work into `main`.
+- When asked to commit work, keep commits focused and coherent rather than mixing unrelated runtime, docs, and release-process changes together when a cleaner split is practical.
+- Before suggesting or performing release steps, use [docs/deployment/release-workflow.md](/Users/andrewlay/sipnews/docs/deployment/release-workflow.md).
+
 ## Canonical Commands
 
 - `npm run setup`: Install dependencies and confirm local env files are present.
@@ -37,7 +50,10 @@
 - `npm run dev:worker`: Start the worker after validating `apps/worker/.env`.
 - `npm run worker:prepare`: Build and run the prepare job after validating worker env.
 - `npm run worker:deliver`: Build and run the deliver job after validating worker env.
-- `npm run db:setup`: Run migrations and seed the first local user after validating a root seed env that targets development and explicitly allows reset.
+- `npm run db:migrate`: Apply forward-only schema migrations.
+- `npm run db:reset`: Destructively reset the dev-only schema, then re-run migrations.
+- `npm run db:bootstrap`: Seed the first local user into a migrated dev-only database.
+- `npm run ops:report`: Print a read-only digest of recent ingestion, delivery, and source-health status for the configured database.
 
 ## Architecture Rules
 
@@ -64,7 +80,8 @@
 ## Safety Notes
 
 - Do not commit real secrets or filled `.env` files.
-- `npm run db:setup` mutates the configured database and requires `DATABASE_ENV=development` plus `DATABASE_RESET_ALLOWED=true` in the root `.env`.
+- `npm run db:reset` mutates the configured database and requires `DATABASE_ENV=development` plus `DATABASE_RESET_ALLOWED=true` in the root `.env`.
+- `npm run db:bootstrap` requires `DATABASE_ENV=development`, `DATABASE_BOOTSTRAP_ALLOWED=true`, and explicit `FIRST_USER_*` values in the root `.env`.
 - `npm run worker:prepare` and `npm run worker:deliver` can hit external providers and deliver email if real credentials are present.
 - Current production URLs:
   - web: `https://www.sipnewstoday.com`

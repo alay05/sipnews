@@ -92,6 +92,15 @@ export interface WorkerPrepareResult {
   clustersTouched: number;
 }
 
+interface SourceIngestionResult {
+  sourceId: string;
+  sourceName: string;
+  status: "succeeded" | "failed";
+  rawArticles: RawArticle[];
+  normalizedArticles: Article[];
+  errorMessage?: string;
+}
+
 export class BucketedWorkerPipeline {
   constructor(private readonly options: BucketedWorkerPipelineOptions) {}
 
@@ -109,16 +118,24 @@ export class BucketedWorkerPipeline {
       metadata: { sourceCount: this.options.sources.length, mode: "prepare" }
     });
 
+    let sourceResults: SourceIngestionResult[] = [];
+    let failureStage = "save_sources";
+
     try {
       await this.saveSources();
-      const rawArticles = await this.fetchAllSources();
-      const articles = this.normalizeArticles(rawArticles, now);
+      failureStage = "fetch_sources";
+      sourceResults = await this.fetchAllSources(ingestionRunId, now);
+      const rawArticles = sourceResults.flatMap((result) => result.rawArticles);
+      const articles = sourceResults.flatMap((result) => result.normalizedArticles);
+      failureStage = "persist_articles";
       await this.options.repositories.content.upsertArticles(articles.map(articleRecord));
 
+      failureStage = "rank_clusters";
       const clusters = rankClusters(dedupeArticles(articles), emptyPreferences(), now);
+      failureStage = "persist_clusters";
       await this.persistClustersAndBuckets(clusters, now);
+      failureStage = "prepare_summaries";
       const summaries = await this.prepareSummaries(clusters);
-      const _preparedClusters = summaries.size;
 
       await this.options.repositories.runs.finishIngestionRun(ingestionRunId, {
         status: "succeeded",
@@ -126,7 +143,11 @@ export class BucketedWorkerPipeline {
         articlesSeen: rawArticles.length,
         articlesSaved: articles.length,
         clustersTouched: clusters.length,
-        metadata: { preparedClusters: summaries.size, mode: "prepare" }
+        metadata: {
+          preparedClusters: summaries.size,
+          mode: "prepare",
+          sourceSummary: summarizeSourceResults(sourceResults)
+        }
       });
 
       return {
@@ -142,7 +163,12 @@ export class BucketedWorkerPipeline {
         articlesSeen: 0,
         articlesSaved: 0,
         clustersTouched: 0,
-        errorMessage: error instanceof Error ? error.message : String(error)
+        errorMessage: formatErrorMessage(error),
+        metadata: {
+          mode: "prepare",
+          failureStage,
+          sourceSummary: summarizeSourceResults(sourceResults)
+        }
       });
       throw error;
     }
@@ -228,8 +254,8 @@ export class BucketedWorkerPipeline {
           articlesSeen: 0,
           articlesSaved: 0,
           clustersTouched: 0,
-          errorMessage: error instanceof Error ? error.message : String(error),
-          metadata: { mode: "deliver" }
+          errorMessage: formatErrorMessage(error),
+          metadata: { mode: "deliver", failureStage: "deliver" }
         });
       }
       throw error;
@@ -242,25 +268,74 @@ export class BucketedWorkerPipeline {
     );
   }
 
-  private async fetchAllSources(): Promise<RawArticle[]> {
+  private async fetchAllSources(
+    ingestionRunId: string,
+    now: Date
+  ): Promise<SourceIngestionResult[]> {
     const results = await Promise.all(
       this.options.sources.map(async (source) => {
+        await this.options.repositories.runs.startIngestionRunSource({
+          runId: ingestionRunId,
+          sourceId: source.id,
+          status: "running",
+          startedAt: new Date()
+        });
+
         try {
-          return await withTimeout(
+          const rawArticles = await withTimeout(
             this.options.adapterForSource(source).fetch(source),
             this.options.sourceFetchTimeoutMs ?? 15000,
             `Source ${source.name} (${source.id}) timed out`
           );
+          const normalizedArticles = this.normalizeArticles(rawArticles, now);
+          await this.options.repositories.runs.finishIngestionRunSource(
+            ingestionRunId,
+            source.id,
+            {
+              status: "succeeded",
+              finishedAt: new Date(),
+              articlesSeen: rawArticles.length,
+              articlesSaved: normalizedArticles.length
+            }
+          );
+          return {
+            sourceId: source.id,
+            sourceName: source.name,
+            status: "succeeded" as const,
+            rawArticles,
+            normalizedArticles
+          };
         } catch (error) {
           console.warn(
-            `[sources] ${source.name} (${source.id}) failed; continuing without it.`,
-            error
+            JSON.stringify({
+              event: "source_fetch_failed",
+              ingestionRunId,
+              sourceId: source.id,
+              sourceName: source.name,
+              errorMessage: formatErrorMessage(error)
+            })
           );
-          return [];
+          await this.options.repositories.runs.finishIngestionRunSource(
+            ingestionRunId,
+            source.id,
+            {
+              status: "failed",
+              finishedAt: new Date(),
+              errorMessage: formatErrorMessage(error)
+            }
+          );
+          return {
+            sourceId: source.id,
+            sourceName: source.name,
+            status: "failed" as const,
+            rawArticles: [],
+            normalizedArticles: [],
+            errorMessage: formatErrorMessage(error)
+          };
         }
       })
     );
-    return results.flat();
+    return results;
   }
 
   private normalizeArticles(rawArticles: RawArticle[], now: Date): Article[] {
@@ -456,7 +531,7 @@ export class BucketedWorkerPipeline {
     } catch (error) {
       await this.options.repositories.runs.finishDeliveryRun(deliveryRunId, {
         status: "failed",
-        errorMessage: error instanceof Error ? error.message : String(error),
+        errorMessage: formatErrorMessage(error),
         finishedAt: now
       });
       throw error;
@@ -663,6 +738,46 @@ function summaryFromVariant(variant: ClusterSummaryVariant | undefined): Cluster
     promptVersion: variant.promptVersion,
     metadata: variant.metadata
   };
+}
+
+function summarizeSourceResults(sourceResults: SourceIngestionResult[]): {
+  total: number;
+  succeeded: number;
+  failed: number;
+  articlesSeen: number;
+  articlesSaved: number;
+  failedSources: Array<{ sourceId: string; sourceName: string; errorMessage: string }>;
+} {
+  return {
+    total: sourceResults.length,
+    succeeded: sourceResults.filter((result) => result.status === "succeeded").length,
+    failed: sourceResults.filter((result) => result.status === "failed").length,
+    articlesSeen: sourceResults.reduce((sum, result) => sum + result.rawArticles.length, 0),
+    articlesSaved: sourceResults.reduce(
+      (sum, result) => sum + result.normalizedArticles.length,
+      0
+    ),
+    failedSources: sourceResults.flatMap((result) =>
+      result.status === "failed" && result.errorMessage
+        ? [
+            {
+              sourceId: result.sourceId,
+              sourceName: result.sourceName,
+              errorMessage: result.errorMessage
+            }
+          ]
+        : []
+    )
+  };
+}
+
+function formatErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.name && error.name !== "Error"
+      ? `${error.name}: ${error.message}`
+      : error.message;
+  }
+  return String(error);
 }
 
 function emptyPreferences() {
