@@ -19,33 +19,39 @@ const sourcesFileSchema = z.object({
 
 const defaultSourcesConfigPath = "../../config/sources.json";
 
+export type WorkerMode = "run" | "prepare" | "deliver";
+
 export interface WorkerEnv {
   databaseUrl: string;
   sourcesConfigPath: string;
-  publicBaseUrl: string;
-  emailFrom: string;
-  sendgridApiKey: string;
+  publicBaseUrl?: string;
+  emailFrom?: string;
+  sendgridApiKey?: string;
   sourceFetchTimeoutMs: number;
   maxArticleAgeDays: number;
-  openAiApiKey: string;
+  openAiApiKey?: string;
   openAiModel: string;
   summaryPromptVersion: string;
 }
 
-export function loadWorkerEnv(env: NodeJS.ProcessEnv = process.env): WorkerEnv {
+export function loadWorkerEnv(
+  mode: WorkerMode,
+  env: NodeJS.ProcessEnv = process.env
+): WorkerEnv {
   const databaseUrl = requiredValue(env.DATABASE_URL, "DATABASE_URL");
-  const emailFrom = requiredValue(env.DIGEST_EMAIL_FROM, "DIGEST_EMAIL_FROM");
-  const sendgridApiKey = requiredValue(env.SENDGRID_API_KEY, "SENDGRID_API_KEY");
-  const openAiApiKey = requiredValue(env.OPENAI_API_KEY, "OPENAI_API_KEY");
   return {
     databaseUrl,
     sourcesConfigPath: env.SOURCES_CONFIG_PATH ?? defaultSourcesConfigPath,
-    publicBaseUrl: env.PUBLIC_BASE_URL ?? "http://localhost:3000",
-    emailFrom,
-    sendgridApiKey,
+    publicBaseUrl:
+      mode === "prepare" ? env.PUBLIC_BASE_URL : requiredValue(env.PUBLIC_BASE_URL, "PUBLIC_BASE_URL"),
+    emailFrom:
+      mode === "prepare" ? env.DIGEST_EMAIL_FROM : requiredValue(env.DIGEST_EMAIL_FROM, "DIGEST_EMAIL_FROM"),
+    sendgridApiKey:
+      mode === "prepare" ? env.SENDGRID_API_KEY : requiredValue(env.SENDGRID_API_KEY, "SENDGRID_API_KEY"),
     sourceFetchTimeoutMs: parsePositiveInteger(env.SOURCE_FETCH_TIMEOUT_MS, 15000),
     maxArticleAgeDays: parsePositiveInteger(env.MAX_ARTICLE_AGE_DAYS, 7),
-    openAiApiKey,
+    openAiApiKey:
+      mode === "deliver" ? env.OPENAI_API_KEY : requiredValue(env.OPENAI_API_KEY, "OPENAI_API_KEY"),
     openAiModel: env.OPENAI_MODEL ?? "gpt-4.1-mini",
     summaryPromptVersion: env.SUMMARY_PROMPT_VERSION ?? "worker-v1"
   };

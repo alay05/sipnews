@@ -14,6 +14,7 @@ import type {
   DeliveryRun,
   DigestRecord,
   IngestionRun,
+  IngestionRunSource,
   PreparedDigestCluster,
   SourceRecord,
   ArticleRecord,
@@ -176,6 +177,7 @@ export class InMemoryDigestRepository implements DigestRepository {
 
 export class InMemoryRunRepository implements RunRepository {
   readonly ingestionRuns = new Map<string, IngestionRun>();
+  readonly ingestionRunSources = new Map<string, IngestionRunSource>();
   readonly deliveryRuns = new Map<string, DeliveryRun>();
 
   async startIngestionRun(
@@ -201,6 +203,36 @@ export class InMemoryRunRepository implements RunRepository {
     const existing = this.ingestionRuns.get(id);
     if (!existing) return;
     this.ingestionRuns.set(id, {
+      ...existing,
+      ...updates,
+      finishedAt: updates.finishedAt ?? existing.finishedAt ?? new Date()
+    });
+  }
+
+  async startIngestionRunSource(
+    sourceRun: Pick<IngestionRunSource, "runId" | "sourceId"> & Partial<IngestionRunSource>
+  ): Promise<void> {
+    this.ingestionRunSources.set(sourceRunKey(sourceRun.runId, sourceRun.sourceId), {
+      runId: sourceRun.runId,
+      sourceId: sourceRun.sourceId,
+      status: sourceRun.status ?? "running",
+      startedAt: sourceRun.startedAt ?? new Date(),
+      finishedAt: sourceRun.finishedAt,
+      articlesSeen: sourceRun.articlesSeen ?? 0,
+      articlesSaved: sourceRun.articlesSaved ?? 0,
+      errorMessage: sourceRun.errorMessage
+    });
+  }
+
+  async finishIngestionRunSource(
+    runId: string,
+    sourceId: string,
+    updates: Partial<IngestionRunSource>
+  ): Promise<void> {
+    const key = sourceRunKey(runId, sourceId);
+    const existing = this.ingestionRunSources.get(key);
+    if (!existing) return;
+    this.ingestionRunSources.set(key, {
       ...existing,
       ...updates,
       finishedAt: updates.finishedAt ?? existing.finishedAt ?? new Date()
@@ -250,4 +282,8 @@ function cloneDigest(digest: DigestRecord): DigestRecord {
       topicsSnapshot: [...item.topicsSnapshot]
     }))
   };
+}
+
+function sourceRunKey(runId: string, sourceId: string): string {
+  return `${runId}:${sourceId}`;
 }

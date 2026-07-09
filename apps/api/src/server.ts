@@ -16,19 +16,9 @@ export function buildApp(
     "/v1/me",
     createClerkAuthMiddleware(env),
     createMeRouter(productData, {
-      clerkSecretKey: env.CLERK_SECRET_KEY,
-      allowedUserEmails: parseAllowedUserEmails(env.ALLOWED_USER_EMAILS)
+      clerkSecretKey: env.CLERK_SECRET_KEY
     })
   );
 
   return app;
-}
-
-function parseAllowedUserEmails(value: string | undefined): string[] | undefined {
-  if (!value) return undefined;
-  const emails = value
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-  return emails.length > 0 ? emails : undefined;
 }

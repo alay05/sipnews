@@ -16,8 +16,7 @@ type ApiClientOptions = {
   baseUrl?: string;
 };
 
-const defaultBaseUrl =
-  process.env.SIPNEWS_API_URL ?? process.env.NEXT_PUBLIC_SIPNEWS_API_URL;
+const defaultBaseUrl = process.env.NEXT_PUBLIC_SIPNEWS_API_URL;
 
 export function createApiClient(options: ApiClientOptions = {}) {
   const baseUrl = options.baseUrl ?? defaultBaseUrl;

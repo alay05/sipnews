@@ -35,13 +35,22 @@ export function createEmailClient(options: { apiKey?: string }): EmailClient {
 
 export function buildDigestEmail(
   digest: DigestRecord,
-  _publicBaseUrl: string
+  publicBaseUrl: string
 ): Pick<EmailMessage, "subject" | "text" | "html"> {
   const subject = `Daily news digest - ${digest.localDate}`;
+  const digestUrl = new URL("/app/digests", publicBaseUrl).toString();
   return {
     subject,
-    text: ["Daily news digest", ...digest.items.map(formatTextItem)].join("\n\n"),
-    html: ["<h1>Daily news digest</h1>", ...digest.items.map(formatHtmlItem)].join("\n\n")
+    text: [
+      "Daily news digest",
+      ...digest.items.map(formatTextItem),
+      `Open your digest history: ${digestUrl}`
+    ].join("\n\n"),
+    html: [
+      "<h1>Daily news digest</h1>",
+      ...digest.items.map(formatHtmlItem),
+      `<p><a href="${escapeHtml(digestUrl)}">Open your digest history</a></p>`
+    ].join("\n\n")
   };
 }
 

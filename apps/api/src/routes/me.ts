@@ -34,7 +34,6 @@ interface RequestWithUser extends AuthenticatedRequest {
 }
 
 interface MeRouterOptions {
-  allowedUserEmails?: string[];
   clerkSecretKey?: string;
 }
 
@@ -57,12 +56,6 @@ export function createMeRouter(
       stringClaim(req.auth.claims.email) ??
         (await resolveClerkPrimaryEmail(clerkClient, req.auth.subject))
     );
-    if (options.allowedUserEmails?.length) {
-      if (!authEmail || !options.allowedUserEmails.includes(authEmail)) {
-        res.status(403).json({ error: "Access not enabled for this account" });
-        return;
-      }
-    }
 
     let user = await data.repositories.users.findUserByAuth(
       req.auth.provider,

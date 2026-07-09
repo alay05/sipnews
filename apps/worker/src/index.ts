@@ -1,6 +1,6 @@
 import { createSourceAdapter } from "./adapters.js";
-import { loadSourcesConfig, loadWorkerEnv } from "./config.js";
-import { createEmailClient } from "./email.js";
+import { loadSourcesConfig, loadWorkerEnv, type WorkerMode } from "./config.js";
+import { ConsoleEmailClient, createEmailClient } from "./email.js";
 import { BucketedWorkerPipeline } from "./pipeline.js";
 import { createClusterSummarizer } from "./summarizer.js";
 import {
@@ -12,11 +12,12 @@ import {
 } from "@sipnews/data";
 
 export async function main(): Promise<void> {
-  const env = loadWorkerEnv();
+  const mode = workerMode(process.argv[2]);
+  const env = loadWorkerEnv(mode);
 
   const pool = createDataPool(env.databaseUrl);
   try {
-    const sources = await loadSourcesConfig(env.sourcesConfigPath);
+    const sources = mode === "deliver" ? [] : await loadSourcesConfig(env.sourcesConfigPath);
     const repositories = {
       users: new PgUserRepository(pool),
       content: new PgContentRepository(pool),
@@ -28,20 +29,27 @@ export async function main(): Promise<void> {
       repositories,
       sources,
       adapterForSource: createSourceAdapter,
-      summarizer: createClusterSummarizer({
-        openAiApiKey: env.openAiApiKey,
-        openAiModel: env.openAiModel
-      }),
-      emailClient: createEmailClient({ apiKey: env.sendgridApiKey }),
-      emailFrom: env.emailFrom,
-      publicBaseUrl: env.publicBaseUrl,
+      summarizer:
+        mode === "deliver"
+          ? unavailableSummarizer()
+          : createClusterSummarizer({
+              openAiApiKey: requireConfiguredValue(env.openAiApiKey, "OPENAI_API_KEY"),
+              openAiModel: env.openAiModel
+            }),
+      emailClient:
+        mode === "prepare"
+          ? new ConsoleEmailClient()
+          : createEmailClient({
+              apiKey: requireConfiguredValue(env.sendgridApiKey, "SENDGRID_API_KEY")
+            }),
+      emailFrom: env.emailFrom ?? "prepare-only@example.invalid",
+      publicBaseUrl: env.publicBaseUrl ?? "http://localhost:3000",
       sourceFetchTimeoutMs: env.sourceFetchTimeoutMs,
       maxArticleAgeDays: env.maxArticleAgeDays,
       summaryModel: env.openAiModel,
       summaryPromptVersion: env.summaryPromptVersion
     });
 
-    const mode = workerMode(process.argv[2]);
     const result =
       mode === "prepare"
         ? await pipeline.prepare()
@@ -68,7 +76,22 @@ export async function main(): Promise<void> {
   }
 }
 
-function workerMode(value: string | undefined): "run" | "prepare" | "deliver" {
+function workerMode(value: string | undefined): WorkerMode {
   if (value === "prepare" || value === "deliver") return value;
   return "run";
+}
+
+function unavailableSummarizer() {
+  return {
+    async summarize() {
+      throw new Error("Summarizer is not available in deliver-only worker mode");
+    }
+  };
+}
+
+function requireConfiguredValue(value: string | undefined, key: string): string {
+  if (!value) {
+    throw new Error(`${key} is required for this worker mode`);
+  }
+  return value;
 }

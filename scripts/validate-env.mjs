@@ -44,7 +44,74 @@ const modes = {
       }
     ]
   },
+  "worker-prepare": {
+    files: [
+      {
+        path: workerEnvPath,
+        requiredKeys: [
+          "DATABASE_URL",
+          "DATABASE_ENV",
+          "OPENAI_API_KEY"
+        ],
+        expectedValues: {
+          DATABASE_ENV: "development"
+        }
+      }
+    ]
+  },
+  "worker-deliver": {
+    files: [
+      {
+        path: workerEnvPath,
+        requiredKeys: [
+          "DATABASE_URL",
+          "DATABASE_ENV",
+          "SENDGRID_API_KEY",
+          "DIGEST_EMAIL_FROM",
+          "PUBLIC_BASE_URL"
+        ],
+        expectedValues: {
+          DATABASE_ENV: "development"
+        }
+      }
+    ]
+  },
   seed: {
+    files: [
+      {
+        path: ".env",
+        requiredKeys: ["DATABASE_URL", "DATABASE_ENV", "DATABASE_RESET_ALLOWED"],
+        expectedValues: {
+          DATABASE_ENV: "development",
+          DATABASE_RESET_ALLOWED: "true"
+        }
+      }
+    ]
+  },
+  bootstrap: {
+    files: [
+      {
+        path: ".env",
+        requiredKeys: [
+          "DATABASE_URL",
+          "DATABASE_ENV",
+          "DATABASE_BOOTSTRAP_ALLOWED",
+          "FIRST_USER_EMAIL",
+          "FIRST_USER_DISPLAY_NAME",
+          "FIRST_USER_TIMEZONE",
+          "FIRST_USER_SEND_HOUR",
+          "FIRST_USER_DIGEST_MAX_ITEMS",
+          "FIRST_USER_SUMMARY_LENGTH",
+          "FIRST_USER_CATEGORY_COUNTS"
+        ],
+        expectedValues: {
+          DATABASE_ENV: "development",
+          DATABASE_BOOTSTRAP_ALLOWED: "true"
+        }
+      }
+    ]
+  },
+  reset: {
     files: [
       {
         path: ".env",
@@ -87,6 +154,19 @@ const modes = {
   "worker-runtime": {
     files: [],
     envKeys: ["DATABASE_URL", "OPENAI_API_KEY", "SENDGRID_API_KEY", "DIGEST_EMAIL_FROM"]
+  },
+  "worker-runtime-prepare": {
+    files: [],
+    envKeys: ["DATABASE_URL", "OPENAI_API_KEY"]
+  },
+  "worker-runtime-deliver": {
+    files: [],
+    envKeys: [
+      "DATABASE_URL",
+      "SENDGRID_API_KEY",
+      "DIGEST_EMAIL_FROM",
+      "PUBLIC_BASE_URL"
+    ]
   }
 };
 
@@ -138,7 +218,13 @@ for (const file of modes[mode].files) {
   }
 }
 
-if (mode === "worker" || mode === "local" || mode === "worker-runtime") {
+if (
+  mode === "worker" ||
+  mode === "worker-prepare" ||
+  mode === "local" ||
+  mode === "worker-runtime" ||
+  mode === "worker-runtime-prepare"
+) {
   validateWorkerSourcesPath(failures);
 }
 
@@ -177,12 +263,13 @@ function parseEnvFile(content) {
 function validateWorkerSourcesPath(failures) {
   let workerSourcesPath = process.env.SOURCES_CONFIG_PATH;
   let sourcesPathOrigin = "process environment";
+  let workerEnvValues;
 
   if (!workerSourcesPath) {
     const workerEnvAbsolutePath = path.join(repoRoot, workerEnvPath);
     if (existsSync(workerEnvAbsolutePath)) {
-      const workerEnv = parseEnvFile(readFileSync(workerEnvAbsolutePath, "utf8"));
-      workerSourcesPath = workerEnv.SOURCES_CONFIG_PATH;
+      workerEnvValues = parseEnvFile(readFileSync(workerEnvAbsolutePath, "utf8"));
+      workerSourcesPath = workerEnvValues.SOURCES_CONFIG_PATH;
       if (workerSourcesPath) {
         sourcesPathOrigin = `${workerEnvPath} SOURCES_CONFIG_PATH`;
       }
@@ -207,6 +294,27 @@ function validateWorkerSourcesPath(failures) {
 
     failures.push(
       `Missing worker sources file ${displayPath} referenced by ${sourcesPathOrigin}. Expected the committed default config/sources.json or another explicit SOURCES_CONFIG_PATH value.`
+    );
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(readFileSync(resolvedSourcesPath, "utf8"));
+    const usesGuardian = Array.isArray(parsed.sources)
+      && parsed.sources.some((source) => source?.enabled !== false && source?.type === "guardian");
+
+    if (usesGuardian) {
+      const guardianApiKey =
+        process.env.THE_GUARDIAN_API_KEY ?? workerEnvValues?.THE_GUARDIAN_API_KEY;
+      if (!guardianApiKey) {
+        failures.push(
+          `Missing THE_GUARDIAN_API_KEY for enabled Guardian sources in ${displayPath}.`
+        );
+      }
+    }
+  } catch (error) {
+    failures.push(
+      `Unable to parse worker sources file ${displayPath}: ${error instanceof Error ? error.message : String(error)}`
     );
   }
 }

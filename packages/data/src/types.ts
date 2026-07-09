@@ -167,6 +167,17 @@ export interface IngestionRun {
   metadata?: JsonObject;
 }
 
+export interface IngestionRunSource {
+  runId: string;
+  sourceId: string;
+  status: string;
+  startedAt: Date;
+  finishedAt?: Date;
+  articlesSeen: number;
+  articlesSaved: number;
+  errorMessage?: string;
+}
+
 export interface DeliveryRun {
   id: string;
   userId?: string;

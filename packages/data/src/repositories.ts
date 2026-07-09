@@ -13,6 +13,7 @@ import type {
   DigestItemRecord,
   DigestRecord,
   IngestionRun,
+  IngestionRunSource,
   SourceRecord,
   StoryClusterRecord,
   UserDigestSettings
@@ -60,11 +61,22 @@ export interface DigestRepository {
 
 export interface RunRepository {
   startIngestionRun(run: Pick<IngestionRun, "id"> & Partial<IngestionRun>): Promise<void>;
+  startIngestionRunSource(
+    sourceRun: Pick<IngestionRunSource, "runId" | "sourceId"> & Partial<IngestionRunSource>
+  ): Promise<void>;
   finishIngestionRun(
     id: string,
     updates: Pick<
       Partial<IngestionRun>,
       "status" | "finishedAt" | "articlesSeen" | "articlesSaved" | "clustersTouched" | "errorMessage" | "metadata"
+    >
+  ): Promise<void>;
+  finishIngestionRunSource(
+    runId: string,
+    sourceId: string,
+    updates: Pick<
+      Partial<IngestionRunSource>,
+      "status" | "finishedAt" | "articlesSeen" | "articlesSaved" | "errorMessage"
     >
   ): Promise<void>;
   createDeliveryRun(run: DeliveryRun): Promise<void>;
@@ -656,6 +668,62 @@ export class PgRunRepository implements RunRepository {
         updates.clustersTouched ?? null,
         updates.errorMessage ?? null,
         updates.metadata ? JSON.stringify(updates.metadata) : null
+      ]
+    );
+  }
+
+  async startIngestionRunSource(
+    sourceRun: Pick<IngestionRunSource, "runId" | "sourceId"> & Partial<IngestionRunSource>
+  ): Promise<void> {
+    await this.db.query(
+      `INSERT INTO ingestion_run_sources (
+        run_id, source_id, status, articles_seen, articles_saved,
+        error_message, started_at, finished_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      ON CONFLICT (run_id, source_id) DO UPDATE SET
+        status = EXCLUDED.status,
+        articles_seen = EXCLUDED.articles_seen,
+        articles_saved = EXCLUDED.articles_saved,
+        error_message = EXCLUDED.error_message,
+        started_at = EXCLUDED.started_at,
+        finished_at = EXCLUDED.finished_at`,
+      [
+        sourceRun.runId,
+        sourceRun.sourceId,
+        sourceRun.status ?? "running",
+        sourceRun.articlesSeen ?? 0,
+        sourceRun.articlesSaved ?? 0,
+        sourceRun.errorMessage ?? null,
+        sourceRun.startedAt ?? new Date(),
+        sourceRun.finishedAt ?? null
+      ]
+    );
+  }
+
+  async finishIngestionRunSource(
+    runId: string,
+    sourceId: string,
+    updates: Pick<
+      Partial<IngestionRunSource>,
+      "status" | "finishedAt" | "articlesSeen" | "articlesSaved" | "errorMessage"
+    >
+  ): Promise<void> {
+    await this.db.query(
+      `UPDATE ingestion_run_sources SET
+        status = COALESCE($3, status),
+        finished_at = COALESCE($4, finished_at, now()),
+        articles_seen = COALESCE($5, articles_seen),
+        articles_saved = COALESCE($6, articles_saved),
+        error_message = COALESCE($7, error_message)
+       WHERE run_id = $1 AND source_id = $2`,
+      [
+        runId,
+        sourceId,
+        updates.status ?? null,
+        updates.finishedAt ?? null,
+        updates.articlesSeen ?? null,
+        updates.articlesSaved ?? null,
+        updates.errorMessage ?? null
       ]
     );
   }
