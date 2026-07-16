@@ -4,31 +4,33 @@ import { hasClerkPublishableKey } from "@/lib/clerkEnv";
 
 export default function SignUpPage() {
   return (
-    <main className="page-shell auth-page">
-      <section className="auth-copy">
+    <main className="page-shell auth-page member-auth-page">
+      <section className="auth-copy member-auth-copy">
         <div>
-          <Link className="brand" href="/">
-            Sip
+          <Link className="brand landing-brand" href="/">
+            Sipnews
           </Link>
-          <p className="eyebrow">Email magic link setup</p>
           <h1>Create account</h1>
-          <p className="muted">
-            Use email-first authentication, then finish digest preferences in
-            onboarding.
+          <p className="auth-lede">
+            Set up your account, then choose the topics for your daily digest.
           </p>
+          <div className="beta-notice">
+            <strong>Private beta testing</strong>
+            <span>New accounts are currently limited to approved testers.</span>
+          </div>
           <div className="auth-links">
-            <span className="muted">Already configured?</span>
+            <span>Already have an account?</span>
             <Link className="button secondary" href="/sign-in">
               Sign in
             </Link>
           </div>
-        </div>
-        <div className="auth-cutout">
-          <div className="cutout-card" aria-hidden="true" />
+          <Link className="back-home-link" href="/">
+            <span aria-hidden="true">&larr;</span> Back to the front page
+          </Link>
         </div>
       </section>
 
-      <section className="auth-card panel">
+      <section className="auth-card member-auth-card">
         {hasClerkPublishableKey() ? (
           <SignUp
             path="/sign-up"

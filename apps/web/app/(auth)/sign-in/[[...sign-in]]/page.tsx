@@ -4,31 +4,33 @@ import { hasClerkPublishableKey } from "@/lib/clerkEnv";
 
 export default function SignInPage() {
   return (
-    <main className="page-shell auth-page">
-      <section className="auth-copy">
+    <main className="page-shell auth-page member-auth-page">
+      <section className="auth-copy member-auth-copy">
         <div>
-          <Link className="brand" href="/">
-            Sip
+          <Link className="brand landing-brand" href="/">
+            Sipnews
           </Link>
-          <p className="eyebrow">Email magic link access</p>
           <h1>Sign in</h1>
-          <p className="muted">
-            Continue with the email address you use for digest delivery and
-            settings.
+          <p className="auth-lede">
+            Continue with the email address connected to your digest.
           </p>
+          <div className="beta-notice">
+            <strong>Private beta testing</strong>
+            <span>New accounts are currently limited to approved testers.</span>
+          </div>
           <div className="auth-links">
-            <span className="muted">New here?</span>
+            <span>New here?</span>
             <Link className="button secondary" href="/sign-up">
               Create account
             </Link>
           </div>
-        </div>
-        <div className="auth-cutout">
-          <div className="hero-cutout-art" aria-hidden="true" />
+          <Link className="back-home-link" href="/">
+            <span aria-hidden="true">&larr;</span> Back to the front page
+          </Link>
         </div>
       </section>
 
-      <section className="auth-card panel">
+      <section className="auth-card member-auth-card">
         {hasClerkPublishableKey() ? (
           <SignIn
             path="/sign-in"
